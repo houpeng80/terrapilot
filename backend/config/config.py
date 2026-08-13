@@ -22,10 +22,13 @@ class AgentConfig(BaseModel):
     max_tokens: int = Field(default=1024, description="The max tokens of the model")
     timeout: int = Field(default=300, description="The timeout of the model")
     max_retries: int = Field(default=3, description="The max retries of the model")
+
     summarization_trigger_messages: int = Field(default=10, description="The messages count when summarization is triggered")
     summarization_trigger_tokens: int = Field(default=100, description="The tokens count when summarization is triggered")
+
     model_type: str = Field(default="deepseek", description="Model type for agent (openai/xiaomi/deepseek/qwen/glm)")
     embedding_model_type: str = Field(default="qwen_embedding", description="Model type for embedding (qwen_embedding)")
+
     print_thinking_process: bool = Field(default=True, description="Whether print the thinking process")
     user_memory: bool = Field(default=True, description="Whether use user memory or not")
     debounce_seconds: int = Field(default=10, ge=1, le=30, description="Seconds to wait before processing queued updates (debounce)")
