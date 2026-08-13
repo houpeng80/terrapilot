@@ -6,16 +6,18 @@ from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_core.messages import HumanMessage
 
-from assistant.config.config import get_app_config
-from assistant.lead_agent.agent_state import OncallAgentState
-from assistant.middleware.log_middleware import LoggingMiddleware
-from assistant.middleware.token_usage_middleware import TokenUsageMiddleware
-from assistant.model import get_model
-from assistant.sub_agents.intent_recognition.prompt import SYSTEM_PROMPT
+from backend.config.config import get_app_config
+from backend.leader_agent.agent_state import TerrapilotAgentState
+from backend.middleware.log_middleware import LoggingMiddleware
+from backend.middleware.token_usage_middleware import TokenUsageMiddleware
+from backend.model import get_model
+from backend.sub_agents.intent_recognize.prompt import apply_system_prompt
 
 AGENT_NAME = "intent_recognize_agent"
 
 intent_literal = Literal[
+    "generate_script",
+    "generate_code",
     "query_oncall",
     "query_latest_version",
     "query_reference_docs",
@@ -23,6 +25,7 @@ intent_literal = Literal[
     "query_resource_by_name",
     "query_resource_by_api",
     "query_resource_by_content",
+    "history_record",
     "unknow"
 ]
 
@@ -32,7 +35,10 @@ params_literal = Literal[
     "resource_name",
     "api_method",
     "api_url",
-    "content"
+    "content",
+    "contain_reference",
+    "input",
+    "history_num"
 ]
 
 class IntentResult(BaseModel):
@@ -45,6 +51,8 @@ class IntentResult(BaseModel):
     )
     params: dict[params_literal, str] = Field(description="用户要执行业务的参数",)
     missing_params: list[str] = Field(description="用户要执行业务缺失的参数")
+    # contain_reference: bool = Field(description="生成脚本时是否要生成依赖资源信息，不生成为false，生成依赖资源为true")
+    # input: str = Field(description="生成代码时的输入信息")
     reasoning: str = Field(description="简短说明做出该意图判断的理由")
 
 class IntentRecognize:
@@ -55,7 +63,7 @@ class IntentRecognize:
         self.config = config
         self.agent = self.create_intent_recognize_agent()
 
-    def intent_recognize(self, agent_state: OncallAgentState) -> IntentResult:
+    def intent_recognize(self, agent_state: TerrapilotAgentState) -> IntentResult:
         i = 0
         while i < 3:
             result = self.agent.invoke(
@@ -72,7 +80,7 @@ class IntentRecognize:
         agent = create_agent(
             model=self.model,
             checkpointer=self.check_pointer,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=apply_system_prompt(),
             response_format=IntentResult,
             middleware=[
                 LoggingMiddleware(agent_name=AGENT_NAME),
@@ -111,10 +119,29 @@ if __name__ == "__main__":
     # print(f"置信度: {res.confidence}")
     # print(f"参数: {res.params}")
     # print(f"推理理由: {res.reasoning}")
-    querys = [query1, query2, query3, query4, query5, query6, query7, query8,query9,query10,query11]
-    for query in querys:
+    # querys = [query1, query2, query3, query4, query5, query6, query7, query8,query9,query10,query11]
+    # for query in querys:
+    #     input_message = {
+    #         "messages": [HumanMessage(content=query)],
+    #         "input_token_statistics": 0,
+    #         "output_token_statistics": 0,
+    #         "total_token_statistics": 0,
+    #         "model_cycle_time": 1,
+    #     }
+    #     res = intent_confidence.intent_recognize(agent_state=input_message)
+    #     print("=====================")
+    #     print(f"识别意图: {res.intent}")
+    #     print(f"置信度: {res.confidence}")
+    #     print(f"参数: {res.params}")
+    #     print(f"推理理由: {res.reasoning}")
+
+    while True:
+        user_input = input("\nUser: ")
+        if user_input.lower() in ["q", "quit"]:
+            break
+
         input_message = {
-            "messages": [HumanMessage(content=query)],
+            "messages": [HumanMessage(content=user_input)],
             "input_token_statistics": 0,
             "output_token_statistics": 0,
             "total_token_statistics": 0,
@@ -125,17 +152,7 @@ if __name__ == "__main__":
         print(f"识别意图: {res.intent}")
         print(f"置信度: {res.confidence}")
         print(f"参数: {res.params}")
+        print(f"缺失的参数: {res.missing_params}")
+        # print(f"是否包含依赖资源: {res.contain_reference}")
+        # print(f"生成代码的原始请求: {res.input}")
         print(f"推理理由: {res.reasoning}")
-
-    # while True:
-    #     user_input = input("\nUser: ")
-    #     if user_input.lower() in ["q", "quit"]:
-    #         break
-    #
-    #     res = intent_confidence.intent_recognize(query=user_input)
-    #     print("=====================")
-    #     print(f"识别意图: {res.intent}")
-    #     print(f"置信度: {res.confidence}")
-    #     print(f"参数: {res.params}")
-    #     print(f"缺失的参数: {res.missing_params}")
-    #     print(f"推理理由: {res.reasoning}")

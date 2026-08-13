@@ -37,7 +37,7 @@ summarization_trigger_tokens: 500
 # Mode type (openai/xiaomi/deepseek/qwen/glm), defaults to deepseek
 # currently, only OpenAI is supported, Anthropic has not been supported
 # ============================================================================
-model_type: deepseek
+model_type: xiaomi
 
 # ============================================================================
 # Model type for embedding (qwen_embedding), defaults to qwen_embedding
@@ -98,8 +98,3 @@ print_thinking_process: true
 # Where open tool call trace, true/false, defaults to false
 # ============================================================================
 open_tool_call_trace: true
-
-# ============================================================================
-# Where open tool call trace, true/false, defaults to false
-# ============================================================================
-tool_call_trace_path: true

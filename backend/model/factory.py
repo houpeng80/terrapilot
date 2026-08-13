@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_openai.chat_models.base import BaseChatOpenAI
 from langchain_deepseek import ChatDeepSeek
 
-from assistant.config.config import get_app_config
+from backend.config.config import get_app_config
 
 load_dotenv(encoding="utf-8")
 

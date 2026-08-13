@@ -12,8 +12,8 @@ from langgraph.prebuilt.tool_node import ToolCallRequest
 from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
-from assistant.config.config import get_app_config
-from assistant.lead_agent.agent_state import OncallAgentState
+from backend.config.config import get_app_config
+from backend.leader_agent.agent_state import TerrapilotAgentState
 
 log_level = get_app_config().log_level
 
@@ -31,7 +31,7 @@ elif log_level == "error" :
 logging.basicConfig(level=logging_level,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     encoding='utf-8',
-                    filename=Path(__file__).parents[2] / "terraform_oncall_assistant.log")
+                    filename=Path(__file__).parents[2] / "terrapilot.log")
 logger = logging.getLogger(__name__)
 
 TOOL_CALL_TRACE_PATH = Path(__file__).parents[2] / "benckmark"
@@ -43,24 +43,27 @@ class LoggingMiddleware(AgentMiddleware):
         self.agent_name = agent_name
 
     @override
-    def before_agent(self, state: OncallAgentState, runtime: Runtime[ContextT]) -> dict[str, Any] | None:
+    def before_agent(self, state: TerrapilotAgentState, runtime: Runtime[ContextT]) -> dict[str, Any] | None:
         logger.info(" agent {%s} begin execute ", self.agent_name)
-        logger.info(" state messages: %s ", state.get("messages"))
+        logger.debug(" state messages: %s ", state.get("messages"))
         return None
 
     @override
-    def abefore_agent(self, state: OncallAgentState, runtime: Runtime) -> dict[str, Any] | None:
+    def abefore_agent(self, state: TerrapilotAgentState, runtime: Runtime) -> dict[str, Any] | None:
         logger.info(" agent {%s} begin execute ", self.agent_name)
+        logger.debug(" state messages: %s ", state.get("messages"))
         return None
 
     @override
-    def after_agent(self, state: OncallAgentState, runtime: Runtime) -> dict[str, Any] | None:
+    def after_agent(self, state: TerrapilotAgentState, runtime: Runtime) -> dict[str, Any] | None:
         logger.info(" agent {%s} execute complete ", self.agent_name)
+        logger.debug(" state messages: %s ", state.get("messages"))
         return None
 
     @override
-    def aafter_agent(self, state: OncallAgentState, runtime: Runtime) -> dict[str, Any] | None:
+    def aafter_agent(self, state: TerrapilotAgentState, runtime: Runtime) -> dict[str, Any] | None:
         logger.info(" agent {%s} execute complete ", self.agent_name)
+        logger.debug(" state messages: %s ", state.get("messages"))
         return None
 
     @override
