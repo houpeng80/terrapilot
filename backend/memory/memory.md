@@ -23,7 +23,7 @@ class ShortTermMemory:
         self.messages = []     
     
     def add_message(self, role: str, content: str):         
-        self.messages.append({"role": role, "content": content})         
+        self.messages.append({"role": role, "context": content})         
         # 超出窗口大小则移除最早的消息         
         if len(self.messages) > self.window_size * 2:  
             # 每轮包含user+assistant两条             
@@ -57,7 +57,7 @@ async def check_memory_conflict(
         if similarity > similarity_threshold:             
             # 相似度高，判断为同一实体——需要更新而不是追加             
             # 进一步用LLM确认是否真的是更新             
-            is_update = await llm_confirm_update(new_memory, mem["content"])             
+            is_update = await llm_confirm_update(new_memory, mem["context"])             
             if is_update:                 
                 return {"action": "UPDATE", "conflict_memory_id": mem["memory_id"]}   
             
@@ -82,14 +82,14 @@ def add_memory_with_ttl(
         memory_record = {         
             "memory_id": str(uuid.uuid4()),         
             "user_id": user_id,         
-            "content": content,         
+            "context": content,         
             "created_at": int(time.time()),         
             "ttl": ttl_timestamp,         
             "is_deleted": False     
         }     
         milvus_client.insert("agent_memory", memory_record)  
         # 示例：本月预算信息，有效期30天 
-        # add_memory_with_ttl(content="用户本月可用于理财的预算为5万元", user_id="user_001", ttl_days=30 )  
+        # add_memory_with_ttl(context="用户本月可用于理财的预算为5万元", user_id="user_001", ttl_days=30 )  
         
         # 定时清理任务（每天运行） 
         async def cleanup_expired_memories():     
@@ -142,9 +142,9 @@ async def chat(user_message: str, user_id: str, session_id: str):
         # 调用LLM     
         response = await llm.ainvoke(         
             messages=[             
-                {"role": "system", "content": system_prompt},             
+                {"role": "system", "context": system_prompt},             
                 *short_term_memory.get_context(),             
-                {"role": "user", "content": user_message}         
+                {"role": "user", "context": user_message}         
             ]     
         )      
         # 更新短期记忆     

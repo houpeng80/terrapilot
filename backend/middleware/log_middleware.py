@@ -12,10 +12,10 @@ from langgraph.prebuilt.tool_node import ToolCallRequest
 from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
-from backend.config.config import get_app_config
+from backend.config.config import get_agent_config
 from backend.leader_agent.agent_state import TerrapilotAgentState
 
-log_level = get_app_config().log_level
+log_level = get_agent_config().log_level
 
 logging_level = str
 
@@ -112,7 +112,7 @@ class LoggingMiddleware(AgentMiddleware):
         tool_args = request.tool_call["args"]
 
         logger.info(" agent {%s} call tool: tool=%s args=%s",self.agent_name, tool_name, tool_args)
-        if get_app_config().open_tool_call_trace:
+        if get_agent_config().open_tool_call_trace:
             file_path = TOOL_CALL_TRACE_PATH / f"{self.agent_name}.txt"
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "a", encoding="utf-8") as f:

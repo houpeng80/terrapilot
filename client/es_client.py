@@ -1,8 +1,8 @@
 from elasticsearch import Elasticsearch
 
-from assistant.config.config import get_app_config
-from assistant.rag.doc_manager import load_documents
-from assistant.rag.es_manager import bulk_insert_es, create_es_client, es_keyword_search, create_index
+from backend.rag.doc_manager import load_documents
+from backend.rag.es_manager import bulk_insert_es, create_es_client, es_keyword_search
+
 
 def add_doc_to_es(client: Elasticsearch):
     # "gaussdb", "rds", "dds", "compute", "geminidb", "taurusdb", "elb", "dcs", "ddm", "elb", "vpc", "cce", "dns", "dms_kafka", "dms_rocketmq", "dms_rabbitmq", "vpn"
@@ -17,7 +17,7 @@ def add_doc_to_es(client: Elasticsearch):
 if __name__ == '__main__':
     es_client = create_es_client()
 
-    # res = es_client.indices.exists(index=get_app_config().es_index)
+    # res = es_client.indices.exists(index=get_agent_config().es_index)
     # print(res)
 
     # create_index(client=es_client)

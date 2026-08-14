@@ -19,9 +19,14 @@ max_tokens: 1024
 timeout: 600
 
 # ============================================================================
-# The max_retries of the model, defaults to 3
+# The model_max_retries of the model, defaults to 10
 # ============================================================================
-max_retries: 20
+model_max_retries: 20
+
+# ============================================================================
+# The max_retries of the tool, defaults to 3
+# ============================================================================
+tool_max_retries: 3
 
 # ============================================================================
 # The messages count when summarization is triggered, defaults to 10

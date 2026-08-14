@@ -21,7 +21,8 @@ class AgentConfig(BaseModel):
     temperature: float = Field(default=0.5, description="The temperature of the model")
     max_tokens: int = Field(default=1024, description="The max tokens of the model")
     timeout: int = Field(default=300, description="The timeout of the model")
-    max_retries: int = Field(default=3, description="The max retries of the model")
+    model_max_retries: int = Field(default=10, description="The max retries of the model")
+    tool_max_retries: int = Field(default=3, description="The max retries of the model")
 
     summarization_trigger_messages: int = Field(default=10, description="The messages count when summarization is triggered")
     summarization_trigger_tokens: int = Field(default=100, description="The tokens count when summarization is triggered")
@@ -91,20 +92,20 @@ class AgentConfig(BaseModel):
 
         return cls.model_validate(config_data)
 
-_app_config: AgentConfig | None = None
+_agent_config: AgentConfig | None = None
 
-def get_app_config() -> AgentConfig:
+def get_agent_config() -> AgentConfig:
     """Get the Code generate agent config instance."""
-    global _app_config
+    global _agent_config
 
-    if _app_config is not None:
-        return _app_config
+    if _agent_config is not None:
+        return _agent_config
 
 
     resolved_path = AgentConfig.resolve_config_path()
-    _app_config = AgentConfig.from_file(str(resolved_path))
+    _agent_config = AgentConfig.from_file(str(resolved_path))
 
-    return _app_config
+    return _agent_config
 
 if __name__ == "__main__":
-    print(get_app_config())
+    print(get_agent_config())

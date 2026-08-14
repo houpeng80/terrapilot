@@ -9,8 +9,8 @@ from langgraph.config import get_config
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langgraph.runtime import Runtime
 
-from assistant.memory.message_processing import filter_messages_for_memory, detect_correction, detect_reinforcement
-from assistant.memory.queue import get_memory_queue
+from backend.memory.message_processing import detect_correction, filter_messages_for_memory, detect_reinforcement
+from backend.memory.queue import get_memory_queue
 
 logger = logging.getLogger(__name__)
 

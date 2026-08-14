@@ -4,32 +4,31 @@ from typing import Any, Callable
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import InMemorySaver
 
-from assistant.config.config import get_app_config
-from assistant.lead_agent.agent_state import OncallAgentState
-from assistant.lead_agent.prompt import apply_prompt_template
-from assistant.memory.queue import get_memory_queue
-from assistant.middleware.DynamicToolMiddleware import DynamicToolMiddleware
-from assistant.middleware.cycle_check_middleware import CycleCheckMiddleware
-from assistant.middleware.dynamic_system_porompt_middleware import build_system_prompt_template
-from assistant.middleware.intent_regonize_middleware import IntentRecognizeMiddleware
-from assistant.middleware.log_middleware import LoggingMiddleware
-from assistant.middleware.memory_middleware import MemoryMiddleware
-from assistant.middleware.summarization_middleware import ContextSummarizationMiddleware
-from assistant.middleware.todo_Middleware import TodoMiddleware
-from assistant.middleware.token_usage_middleware import TokenUsageMiddleware
-from assistant.model.factory import get_model
-from assistant.tool import oncall_schedule, get_latest_provider_version, reference_docs
-from assistant.tool.file_tool import read_md
-from assistant.utils.github_utils import clone_code, test_code_exists
-from assistant.utils.schedule_utils import stop_scheduler_sync_git_code, start_scheduler_sync_git_code
+from backend.config.config import get_agent_config
+from backend.leader_agent.agent_state import TerrapilotAgentState, Intent
+from backend.memory.queue import get_memory_queue
+from backend.middleware.dynamic_tool_middleware import DynamicToolMiddleware
+from backend.middleware.dynamic_system_porompt_middleware import build_system_prompt_template
+from backend.middleware.intent_regonize_middleware import IntentRecognizeMiddleware
+from backend.middleware.log_middleware import LoggingMiddleware
+from backend.middleware.memory_middleware import MemoryMiddleware
+from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
+from backend.middleware.token_usage_middleware import TokenUsageMiddleware
+from backend.model import get_model
+from backend.utils.github_utils import test_code_exists, clone_code, pull_code
+from backend.utils.schedule_utils import stop_scheduler_sync_git_code, start_scheduler_sync_git_code
+from backend.router.router import RouterManager, JUMP_TO_END
+from backend.sub_agent.intent_recognize.intent_recognize import IntentRecognize
+from backend.sub_agent.sub_agent_registry import SubAgentRegistry
+from backend.sub_agent.sub_agent_scheduler import SubAgentScheduler
 
 logger = logging.getLogger(__name__)
 
-AGENT_NAME = "terraform_oncall_assistant"
+AGENT_NAME = "terraform-pilot"
 
 def init_local_code():
     exists = test_code_exists()
@@ -38,26 +37,31 @@ def init_local_code():
         clone_code()
     else:
         logger.info("begin to pull latest code from github")
-        # pull_code()
+        pull_code()
 
 class LeaderAgent:
-    def __init__(self, config: dict[str, Any]):
-        agent_config = get_app_config()
-        model = get_model(agent_config.model_type)
-        self.model = model
-        self.agent_config = agent_config
+    def __init__(self, config: RunnableConfig):
+        self.model = get_model(get_agent_config().model_type)
+        self.agent_config = get_agent_config()
         self.config = config
         self.check_pointer = InMemorySaver()
-        self.agent = self.create_assistant_agent()
+        self.agent = self.create_terrapilot_agent()
+        self.intent_recognize = IntentRecognize(config)
+        self.sub_agent_registry = SubAgentRegistry()
+        self.router_manager = RouterManager(self.intent_recognize)
+        self.sub_agent_scheduler = SubAgentScheduler(self.sub_agent_registry)
         # init_local_code()
         # start_scheduler_sync_git_code()
 
     def __del__(self):
+        # save thc cache queue to memory
+        # get_memory_queue().flush()
         stop_scheduler_sync_git_code()
 
-    def init_agent_state(self, question:str) -> dict[str, Any]:
+    def init_agent_state(self, question:str, histories: list[Intent]) -> dict[str, Any]:
         initial_state = {
             "messages": [HumanMessage(content=question)],
+            "histories": histories,
             "input_token_statistics": 0,
             "output_token_statistics": 0,
             "total_token_statistics": 0,
@@ -65,22 +69,61 @@ class LeaderAgent:
         }
         return initial_state
 
-    def deal_question(self):
+    def invoke(self):
         while True:
             user_input = input("\nUser: ")
             if user_input.lower() in ["q", "quit"]:
-                # save thc cache queue to memory
-                get_memory_queue().flush()
                 break
 
-            self.react(user_input)
+            self.run(user_input)
 
-    def react(self, question: str):
-        input_message = self.init_agent_state(question)
+    def run(self, input_message: str):
+        print("=================================")
+        print("state: %s", self.agent.get_state(self.config))
+        histories = []
+        if "histories" in self.agent.get_state(self.config).values:
+            histories = self.agent.get_state(self.config).values["histories"]
+        leader_state = self.init_agent_state(input_message, histories)
 
+        # 上下文压缩处理, 意图识别
+        intent_res = self.intent_recognize.intent_recognize(agent_state=leader_state)
+        # 路由、判断、人工确认
+        route, msg = self.router_manager.router(intent_res, histories)
+        print("route: %s", route)
+        print("msg: %s", msg)
+        # result_input = ""
+        if route == JUMP_TO_END:
+            result_input = msg
+        else:
+            # 子agent调度，保存结果到history
+            sub_agent_result = self.sub_agent_scheduler.schedule(intent_res)
+            print("sub_agent_result: %s", sub_agent_result)
+            if not sub_agent_result.success:
+                result_input = sub_agent_result.error
+            else:
+                result_input = sub_agent_result.result
+                new_intent = {
+                    "intent":intent_res.intent,
+                    "confidence":intent_res.confidence,
+                    "params":intent_res.params,
+                    "missing_params":intent_res.missing_params,
+                    "reasoning":intent_res.reasoning,
+                    "result":result_input,
+                }
+                histories.insert(0, new_intent)
+                self.agent.get_state(self.config).values["histories"] = histories
+
+        # 主agent生成结果
+        result_state = {
+            "messages": [HumanMessage(content=result_input)],
+            "input_token_statistics": leader_state["input_token_statistics"],
+            "output_token_statistics": leader_state["output_token_statistics"],
+            "total_token_statistics": leader_state["total_token_statistics"],
+            "model_cycle_time": 1,
+        }
         try:
             stream = self.agent.stream(
-                input=input_message,
+                input=result_state,
                 config=self.config,
                 stream_mode=["messages", "updates"],
                 version="v2",
@@ -103,10 +146,14 @@ class LeaderAgent:
         except Exception as e:
             print(f"\n--- ❌ fail to deal question: {e}---")
 
+        # 保存intent到history
+
         state = self.agent.get_state(self.config).values
+        print("\nlast state: %s", state)
+        print("=================================")
         return state
 
-    def create_assistant_agent(self):
+    def create_terrapilot_agent(self):
         agent = create_agent(
             name=AGENT_NAME,
             model=self.model,
@@ -114,7 +161,7 @@ class LeaderAgent:
             # system_prompt=self.build_system_prompt_template(),
             middleware=self.build_middlewares(),
             tools=self.build_base_tools(),
-            state_schema=OncallAgentState
+            state_schema=TerrapilotAgentState
         )
         return agent
 
@@ -124,11 +171,9 @@ class LeaderAgent:
     def build_middlewares(self) -> list[AgentMiddleware]:
         middlewares: list[AgentMiddleware|str] = [
             LoggingMiddleware(agent_name=AGENT_NAME),
-            IntentRecognizeMiddleware(agent_name=AGENT_NAME, config=self.config),
-            DynamicToolMiddleware(agent_name=AGENT_NAME),
             build_system_prompt_template,
             TokenUsageMiddleware(agent_name=AGENT_NAME),
-            CycleCheckMiddleware(agent_name=AGENT_NAME),
+            # CycleCheckMiddleware(agent_name=AGENT_NAME),
             MemoryMiddleware(agent_name=AGENT_NAME),
             ContextSummarizationMiddleware(
                 model=self.model,
@@ -139,15 +184,15 @@ class LeaderAgent:
                 ],
                 keep=("tokens", self.agent_config.summarization_trigger_tokens/3)
             ),
-            TodoMiddleware(),
+            # TodoMiddleware(),
         ]
         return middlewares
 
     def build_base_tools(self) -> list[BaseTool | Callable[[Callable | Runnable], BaseTool]] | None:
         tools = [
-            oncall_schedule,
-            get_latest_provider_version,
-            reference_docs,
-            read_md,
+            # oncall_schedule,
+            # get_latest_provider_version,
+            # reference_docs,
+            # read_md,
         ]
         return tools

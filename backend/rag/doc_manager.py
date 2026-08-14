@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_core.documents import Document
 
-from assistant.utils.github_utils import TERRAFORM_CODE_PATH
+from backend.utils.github_utils import TERRAFORM_CODE_PATH
 
 load_dotenv(encoding="utf-8")
 

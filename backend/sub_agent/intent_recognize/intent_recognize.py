@@ -13,7 +13,7 @@ from backend.leader_agent.agent_state import TerrapilotAgentState
 from backend.middleware.log_middleware import LoggingMiddleware
 from backend.middleware.token_usage_middleware import TokenUsageMiddleware
 from backend.model import get_model
-from backend.sub_agents.intent_recognize.prompt import apply_system_prompt
+from backend.sub_agent.intent_recognize.prompt import apply_system_prompt
 from middleware.summarization_middleware import ContextSummarizationMiddleware
 
 AGENT_NAME = "intent_recognize_agent"
@@ -41,7 +41,7 @@ params_literal = Literal[
     "context",
     "contain_reference",
     "input",
-    "history_num"
+    "history_index"
 ]
 
 class IntentResult(BaseModel):
@@ -125,6 +125,11 @@ class IntentRecognize:
                 return False, f"the params {missing_params_str} are missing"
 
         if intent == "query_resource_by_content":
+            if missing_params and len(missing_params) > 0:
+                missing_params_str = ",".join(missing_params)
+                return False, f"the params {missing_params_str} are missing"
+
+        if intent == "history_record":
             if missing_params and len(missing_params) > 0:
                 missing_params_str = ",".join(missing_params)
                 return False, f"the params {missing_params_str} are missing"

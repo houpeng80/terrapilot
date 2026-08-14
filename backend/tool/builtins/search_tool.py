@@ -1,6 +1,7 @@
 from langchain_core.tools import tool, ToolException
 
 from backend.utils.github_utils import get_latest_version, checkout_code, list_file, search_resource_by_key_word
+from rag.rag_manager import rag_keyword_search
 
 
 @tool
@@ -88,8 +89,8 @@ def api_param_check(service_name: str, api_method: str, api_url: str) -> tuple[b
 
 @tool
 def rag_search_tool(resource_type: str, content: str) -> list[str]:
-    """ this tool is used to get the related resource/data_source info by resource_type and content,
-    triggered only when get the related resource/data_source info by resource_type and content"""
+    """ this tool is used to get the related resource/data_source info by resource_type and context,
+    triggered only when get the related resource/data_source info by resource_type and context"""
 
     resource_type = resource_type.lower()
     success, err_msg = rag_search_param_check(resource_type)

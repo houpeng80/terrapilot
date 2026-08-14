@@ -124,8 +124,8 @@ if "__main__" == __name__:
     # print(out)
     # print("====================list_file============================")
 
-    # out = search_resource_by_key_word("// @API LTS POST /v3/{project_id}/lts/access-config-list","huaweicloud/services/lts")
-    out = search_resource_by_key_word("// @API GaussDB POST /gaussdb/v3.1/{project_id}/instances/db-upgrade/candidate-versions","huaweicloud/services/gaussdb")
+    out = search_resource_by_key_word("// @API LTS POST /v3/{project_id}/lts/access-config-list","huaweicloud/services/lts")
+    # out = search_resource_by_key_word("// @API GaussDB POST /gaussdb/v3.1/{project_id}/instances/db-upgrade/candidate-versions","huaweicloud/services/gaussdb")
     print("====================search_from_code============================")
     print(type(out))
     print(f"out={out}")

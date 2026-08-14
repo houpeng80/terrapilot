@@ -9,7 +9,7 @@ resource_path = {
     "resource": "docs/resources",
 }
 
-PERSIST_DIRECTORY = Path(__file__).parents[2] / "chroma_db"
+PERSIST_DIRECTORY = Path(__file__).parents[2] / "vector_db"
 
 def get_chroma_client(model: OpenAIEmbeddings) -> Chroma:
     chroma_client = Chroma(

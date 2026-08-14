@@ -9,10 +9,10 @@ import uuid
 from collections.abc import Awaitable
 from typing import Any
 
-from assistant.config.config import get_app_config
-from assistant.memory.prompt import format_conversation_for_update, MEMORY_UPDATE_PROMPT
-from assistant.memory.storage import create_empty_memory, get_memory_storage, utc_now_iso_z
-from assistant.model.factory import get_model
+from backend.config.config import get_agent_config
+from backend.memory.prompt import format_conversation_for_update, MEMORY_UPDATE_PROMPT
+from backend.memory.storage import create_empty_memory, get_memory_storage, utc_now_iso_z
+from backend.model import get_model
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ def create_memory_fact(
     """Create a new fact and persist the updated memory data."""
     normalized_content = content.strip()
     if not normalized_content:
-        raise ValueError("content")
+        raise ValueError("context")
 
     normalized_category = category.strip() or "context"
     validated_confidence = _validate_confidence(confidence)
@@ -80,7 +80,7 @@ def create_memory_fact(
     facts.append(
         {
             "id": f"fact_{uuid.uuid4().hex[:8]}",
-            "content": normalized_content,
+            "context": normalized_content,
             "category": normalized_category,
             "confidence": validated_confidence,
             "createdAt": now,
@@ -133,8 +133,8 @@ def update_memory_fact(
             if content is not None:
                 normalized_content = content.strip()
                 if not normalized_content:
-                    raise ValueError("content")
-                updated_fact["content"] = normalized_content
+                    raise ValueError("context")
+                updated_fact["context"] = normalized_content
             if category is not None:
                 updated_fact["category"] = category.strip() or "context"
             if confidence is not None:
@@ -155,11 +155,11 @@ def update_memory_fact(
 
 
 def extract_text(content: Any) -> str:
-    """Extract plain text from LLM response content (str or list of content blocks).
+    """Extract plain text from LLM response context (str or list of context blocks).
 
-    Modern LLMs may return structured content as a list of blocks instead of a
+    Modern LLMs may return structured context as a list of blocks instead of a
     plain string, e.g. [{"type": "text", "text": "..."}]. Using str() on such
-    content produces Python repr instead of the actual text, breaking JSON
+    context produces Python repr instead of the actual text, breaking JSON
     parsing downstream.
 
     String chunks are concatenated without separators to avoid corrupting
@@ -241,7 +241,7 @@ class MemoryUpdater:
         Args:
             model_name: Optional model name to use. If None, uses config or default.
         """
-        self.agent_config = get_app_config()
+        self.agent_config = get_agent_config()
 
     def update_memory(
         self,
@@ -295,12 +295,12 @@ class MemoryUpdater:
                 return False
 
             current_memory, prompt = prepared
-            model = get_model(get_app_config().model_type)
+            model = get_model(get_agent_config().model_type)
 
             # invoke model to summary messages
             response = await model.ainvoke(prompt, config={"run_name": "memory_agent"})
             if len(response.content) == 0:
-                logger.info("No memory content to update")
+                logger.info("No memory context to update")
                 return True
 
             return await asyncio.to_thread(
@@ -403,7 +403,7 @@ class MemoryUpdater:
         Returns:
             Updated memory data.
         """
-        config = get_app_config()
+        config = get_agent_config()
         now = utc_now_iso_z()
 
         # Update user sections
@@ -432,12 +432,12 @@ class MemoryUpdater:
             current_memory["facts"] = [f for f in current_memory.get("facts", []) if f.get("id") not in facts_to_remove]
 
         # Add new facts
-        existing_fact_keys = {fact_key for fact_key in (fact_content_key(fact.get("content")) for fact in current_memory.get("facts", [])) if fact_key is not None}
+        existing_fact_keys = {fact_key for fact_key in (fact_content_key(fact.get("context")) for fact in current_memory.get("facts", [])) if fact_key is not None}
         new_facts = update_data.get("newFacts", [])
         for fact in new_facts:
             confidence = fact.get("confidence", 0.5)
             if confidence >= config.fact_confidence_threshold:
-                raw_content = fact.get("content", "")
+                raw_content = fact.get("context", "")
                 if not isinstance(raw_content, str):
                     continue
                 normalized_content = raw_content.strip()
@@ -447,7 +447,7 @@ class MemoryUpdater:
 
                 fact_entry = {
                     "id": f"fact_{uuid.uuid4().hex[:8]}",
-                    "content": normalized_content,
+                    "context": normalized_content,
                     "category": fact.get("category", "context"),
                     "confidence": confidence,
                     "createdAt": now,

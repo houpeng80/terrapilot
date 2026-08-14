@@ -104,7 +104,7 @@ Output Format (JSON):
     "longTermBackground": {{ "summary": "...", "shouldUpdate": true/false }}
   }},
   "newFacts": [
-    {{ "content": "...", "category": "preference|knowledge|context|behavior|goal|correction", "confidence": 0.0-1.0 }}
+    {{ "context": "...", "category": "preference|knowledge|context|behavior|goal|correction", "confidence": 0.0-1.0 }}
   ],
   "factsToRemove": ["fact_id_1", "fact_id_2"]
 }}
@@ -225,7 +225,7 @@ def format_memory_for_injection(memory_data: dict[str, Any], max_tokens: int = 2
     facts_data = memory_data.get("facts", [])
     if isinstance(facts_data, list) and facts_data:
         ranked_facts = sorted(
-            (f for f in facts_data if isinstance(f, dict) and isinstance(f.get("content"), str) and f.get("content").strip()),
+            (f for f in facts_data if isinstance(f, dict) and isinstance(f.get("context"), str) and f.get("context").strip()),
             key=lambda fact: _coerce_confidence(fact.get("confidence"), default=0.0),
             reverse=True,
         )
@@ -241,7 +241,7 @@ def format_memory_for_injection(memory_data: dict[str, Any], max_tokens: int = 2
 
         fact_lines: list[str] = []
         for fact in ranked_facts:
-            content_value = fact.get("content")
+            content_value = fact.get("context")
             if not isinstance(content_value, str):
                 continue
             content = content_value.strip()
@@ -297,9 +297,9 @@ def format_conversation_for_update(messages: list[Any]) -> str:
     lines = []
     for msg in messages:
         role = getattr(msg, "type", "unknown")
-        content = getattr(msg, "content", str(msg))
+        content = getattr(msg, "context", str(msg))
 
-        # Handle content that might be a list (multimodal)
+        # Handle context that might be a list (multimodal)
         if isinstance(content, list):
             text_parts = []
             for p in content:
