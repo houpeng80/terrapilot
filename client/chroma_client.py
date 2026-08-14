@@ -1,9 +1,9 @@
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
-from assistant.model import get_model
-from assistant.rag.chroma_manager import add_docs_to_chroma, get_chroma_client, similarity_search_docs_with_score_from_chroma
-from assistant.rag.doc_manager import load_documents
+from backend.model import get_model
+from backend.rag.chroma_manager import add_docs_to_chroma, similarity_search_docs_with_score_from_chroma, get_chroma_client
+from backend.rag.doc_manager import load_documents
 
 def add_doc_to_chromadb(client: Chroma):
     services = ["gaussdb", "rds", "dds", "compute", "geminidb", "taurusdb", "elb", "dcs", "ddm", "elb", "vpc", "cce", "dns", "dms_kafka", "dms_rocketmq","dms_rabbitmq" "vpn"]

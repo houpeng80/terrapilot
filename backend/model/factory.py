@@ -8,17 +8,17 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_openai.chat_models.base import BaseChatOpenAI
 from langchain_deepseek import ChatDeepSeek
 
-from backend.config.config import get_app_config
+from backend.config.config import get_agent_config
 
 load_dotenv(encoding="utf-8")
 
 def create_model(model_type: str) -> BaseChatOpenAI | BaseModel:
-    config = get_app_config()
+    config = get_agent_config()
     common_params = {
         "temperature": config.temperature,
         "max_tokens": config.max_tokens,
         "timeout": config.timeout,
-        "max_retries": config.max_retries,
+        "max_retries": config.model_max_retries,
         # "logprobs": True,
         # "top_logprobs": 5,
         "streaming": True,
@@ -65,7 +65,7 @@ def create_model(model_type: str) -> BaseChatOpenAI | BaseModel:
         )
     # Qwen
     elif model_type == "qwen":
-        return OpenAIEmbeddings(
+        return ChatOpenAI(
             model=os.getenv("QWEN_MODEL"),
             api_key=os.getenv("QWEN_API_KEY"),
             base_url=os.getenv("QWEN_BASE_URL"),
@@ -95,7 +95,7 @@ def create_model(model_type: str) -> BaseChatOpenAI | BaseModel:
 
 model_cache: dict[str, BaseChatOpenAI | BaseModel] = {}
 
-def get_model(model_type = get_app_config().model_type) -> BaseChatOpenAI | BaseModel:
+def get_model(model_type = get_agent_config().model_type) -> BaseChatOpenAI | BaseModel:
     global model_cache
 
     if hasattr(model_cache, model_type):

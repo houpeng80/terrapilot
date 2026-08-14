@@ -6,9 +6,9 @@ from langchain.agents.middleware import AgentMiddleware
 from langgraph.config import get_config
 from langgraph.runtime import Runtime
 
-from assistant.config.config import get_app_config
-from assistant.memory.message_processing import filter_messages_for_memory, detect_correction, detect_reinforcement
-from assistant.memory.queue import get_memory_queue
+from backend.config.config import get_agent_config
+from backend.memory.message_processing import filter_messages_for_memory, detect_correction, detect_reinforcement
+from backend.memory.queue import get_memory_queue
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class MemoryMiddleware(AgentMiddleware[MemoryMiddlewareState]):
         Returns:
             None (no state changes needed from this middleware).
         """
-        config = get_app_config()
+        config = get_agent_config()
         if not config.user_memory:
             return None
 

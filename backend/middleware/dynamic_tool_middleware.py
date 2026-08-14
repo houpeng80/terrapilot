@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from typing import override, Callable, Any
 
@@ -49,26 +50,38 @@ class DynamicToolMiddleware(AgentMiddleware[TerrapilotAgentState]):
 
     @override
     def wrap_tool_call(self, request: ToolCallRequest, handler: Callable[[ToolCallRequest], ToolMessage | Command[Any]]):
-        intent = request.state["intent"]
-        tools = self.tool_registry.get_tools_by_intent(intent)
-        tool_map = {tool.name: tool for tool in tools}
         tool_call_name = request.tool_call["name"]
-        if tool_call_name in tool_map:
-            return handler(request.override(tool=tool_map[tool_call_name]))
+        tool_call_args = request.tool_call["args"]
+        tool_call_id = request.tool_call["id"]
 
-        return handler(request)
+        return self.handler_tool_call(tool_call_name, tool_call_args, tool_call_id)
 
     @override
     def awrap_tool_call(self, request: ToolCallRequest, handler: Callable[[ToolCallRequest], ToolMessage | Command[Any]]):
-        intent = request.state["intent"]
-        tools = self.tool_registry.get_tools_by_intent(intent)
-        tool_map = {tool.name: tool for tool in tools}
         tool_call_name = request.tool_call["name"]
-        if tool_call_name in tool_map:
-            return handler(request.override(tool=tool_map[tool_call_name]))
+        tool_call_args = request.tool_call["args"]
+        tool_call_id = request.tool_call["id"]
 
-        return handler(request)
+        return self.handler_tool_call(tool_call_name, tool_call_args, tool_call_id)
 
-    def handler_tool(self, tool_name: str, tool_args: Any) -> ToolMessage | Command[Any]:
-        tool_executor =
+    def handler_tool_call(self, tool_name: str, tool_args: Any, tool_call_id: str) -> ToolMessage | Command[Any]:
+        tool_res = self.tool_executor.execute(tool_name, tool_args)
+        if tool_res.success:
+            tool_message = ToolMessage(
+                id=uuid.uuid4().hex,
+                content=tool_res.result,
+                tool_call_id=tool_call_id,
+                name=f"call_tool_{tool_name}",
+            )
+            return tool_message
+
+        tool_message = ToolMessage(
+            id=uuid.uuid4().hex,
+            content=tool_res.error,
+            tool_call_id=tool_call_id,
+            name=f"call_tool_{tool_name}",
+        )
+        return tool_message
+
+
 

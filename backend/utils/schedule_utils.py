@@ -3,7 +3,7 @@ import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from assistant.utils.github_utils import pull_code
+from backend.utils.github_utils import pull_code
 
 logger = logging.getLogger(__name__)
 

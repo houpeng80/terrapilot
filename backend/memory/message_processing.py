@@ -35,8 +35,8 @@ _REINFORCEMENT_PATTERNS = (
 )
 
 def extract_message_text(message: Any) -> str:
-    """Extract plain text from message content for filtering and signal detection."""
-    content = getattr(message, "content", "")
+    """Extract plain text from message context for filtering and signal detection."""
+    content = getattr(message, "context", "")
     if isinstance(content, list):
         text_parts: list[str] = []
         for part in content:

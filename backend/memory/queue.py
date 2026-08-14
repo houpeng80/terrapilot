@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from assistant.config.config import get_app_config
+from backend.config.config import get_agent_config
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class MemoryUpdateQueue:
         reinforcement_detected: bool = False,
     ) -> None:
         """Add a conversation and start processing immediately in the background. used when context summarization is triggered"""
-        config = get_app_config()
+        config = get_agent_config()
         if not config.user_memory:
             return
 
@@ -131,7 +131,7 @@ class MemoryUpdateQueue:
 
     def _reset_timer(self) -> None:
         """Reset the debounce timer."""
-        config = get_app_config()
+        config = get_agent_config()
         self._schedule_timer(config.debounce_seconds)
 
         logger.debug("Memory update timer set for %ss", config.debounce_seconds)
@@ -152,7 +152,7 @@ class MemoryUpdateQueue:
     def _process_queue(self) -> None:
         """Process all queued conversation contexts."""
         # Import here to avoid circular dependency
-        from assistant.memory.updater import MemoryUpdater
+        from backend.memory.updater import MemoryUpdater
 
         with self._lock:
             if self._processing:
