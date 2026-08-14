@@ -10,15 +10,15 @@ from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
 
 from backend.config.config import get_agent_config
-from backend.leader_agent.agent_state import TerrapilotAgentState
 from backend.tool.tool_executor import ToolExecutor
 from backend.tool.tool_registry import ToolRegistry
+from backend.sub_agent.intent_recognize.agent_state import OncallAgentState
 
 logger = logging.getLogger(__name__)
 
-class DynamicToolMiddleware(AgentMiddleware[TerrapilotAgentState]):
+class DynamicToolMiddleware(AgentMiddleware[OncallAgentState]):
 
-    state_schema = TerrapilotAgentState
+    state_schema = OncallAgentState
 
     def __init__(self, agent_name: str, tool_registry: ToolRegistry):
         super().__init__()
@@ -32,7 +32,7 @@ class DynamicToolMiddleware(AgentMiddleware[TerrapilotAgentState]):
             request: ModelRequest,
             handler: Callable[[ModelRequest], ModelResponse],
     ) -> ModelCallResult:
-        intent = request.state["current_intent"]
+        intent = request.state["intent"]
         tools = self.tool_registry.get_tools_by_intent(intent)
         updated_request = request.override(tools=[*request.tools, *tools])
         return handler(updated_request)

@@ -17,6 +17,7 @@ class TerrapilotAgentState(AgentState):
     # 实现历史需求
     histories: list[Intent]
 
+    current_intent: str
     # 识别到要获取历史消息
     get_history: bool
     # 历史消息下标，1表示第0条，依次类推

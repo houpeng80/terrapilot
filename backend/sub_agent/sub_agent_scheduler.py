@@ -1,18 +1,11 @@
 import logging
 import time
-from typing import Any, Optional
 
 from backend.sub_agent.intent_recognize.intent_recognize import IntentResult
 from backend.sub_agent.sub_agent_registry import SubAgentRegistry
+from backend.sub_agent.sub_agents import SubAgentExecutionResult
 
 logger = logging.getLogger(__name__)
-
-class SubAgentExecutionResult:
-    def __init__(self, success: bool, result: Any = None, error: Optional[str] = None, duration: float = 0.0):
-        self.success = success
-        self.result = result
-        self.error = error
-        self.duration = duration
 
 class SubAgentScheduler:
     def __init__(self, registry: SubAgentRegistry, timeout: float = 30.0, max_retries: int = 0):

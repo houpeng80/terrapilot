@@ -47,8 +47,8 @@ class LeaderAgent:
         self.check_pointer = InMemorySaver()
         self.agent = self.create_terrapilot_agent()
         self.intent_recognize = IntentRecognize(config)
-        self.sub_agent_registry = SubAgentRegistry()
         self.router_manager = RouterManager(self.intent_recognize)
+        self.sub_agent_registry = SubAgentRegistry()
         self.sub_agent_scheduler = SubAgentScheduler(self.sub_agent_registry)
         # init_local_code()
         # start_scheduler_sync_git_code()
@@ -79,7 +79,7 @@ class LeaderAgent:
 
     def run(self, input_message: str):
         print("=================================")
-        print("state: %s", self.agent.get_state(self.config))
+        print("state: ", self.agent.get_state(self.config))
         histories = []
         if "histories" in self.agent.get_state(self.config).values:
             histories = self.agent.get_state(self.config).values["histories"]
@@ -89,9 +89,8 @@ class LeaderAgent:
         intent_res = self.intent_recognize.intent_recognize(agent_state=leader_state)
         # 路由、判断、人工确认
         route, msg = self.router_manager.router(intent_res, histories)
-        print("route: %s", route)
-        print("msg: %s", msg)
-        # result_input = ""
+        print("route: ", route)
+        print("msg: ", msg)
         if route == JUMP_TO_END:
             result_input = msg
         else:
