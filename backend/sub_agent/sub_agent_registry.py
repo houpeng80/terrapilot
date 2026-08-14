@@ -1,7 +1,10 @@
 import threading
 from typing import Any
 
+from backend.sub_agent.oncall.oncall_agent import OncallAgent
+
 BUILTIN_SUB_AGENTS = [
+    OncallAgent
 ]
 
 SUB_AGENT_CONTAIN_INTENTS = {

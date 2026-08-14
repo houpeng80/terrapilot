@@ -1,0 +1,148 @@
+import logging
+from typing import Any, Callable
+
+from langchain.agents import create_agent
+from langchain.agents.middleware import AgentMiddleware
+from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage, RemoveMessage
+from langchain_core.runnables import Runnable
+from langchain_core.tools import BaseTool
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph.message import REMOVE_ALL_MESSAGES
+
+from backend.config.config import get_agent_config
+from backend.model import get_model
+from backend.middleware.log_middleware import LoggingMiddleware
+from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
+from backend.middleware.token_usage_middleware import TokenUsageMiddleware
+from backend.sub_agent.intent_recognize.agent_state import OncallAgentState
+from backend.sub_agent.intent_recognize.intent_recognize import IntentResult
+from backend.sub_agent.sub_agents import SubAgent, SubAgentExecutionResult
+from backend.middleware.context_clear_middleware import ContextClearMiddleware
+from backend.middleware.todo_Middleware import TodoMiddleware
+from backend.sub_agent.oncall.middleware.dynamic_tool_middleware import DynamicToolMiddleware
+from backend.sub_agent.oncall.prompt import apply_prompt_template
+from tool.tool_registry import ToolRegistry
+
+logger = logging.getLogger(__name__)
+
+AGENT_NAME = "oncall-agent"
+
+class OncallAgent(SubAgent):
+    name:str = AGENT_NAME
+    def __init__(self, config: dict[str, Any]):
+        super().__init__(AGENT_NAME)
+        agent_config = get_agent_config()
+        model = get_model(agent_config.model_type)
+        self.model = model
+        self.agent_config = agent_config
+        self.config = config
+        self.check_pointer = InMemorySaver()
+        self.tool_registry = ToolRegistry()
+        self.agent = self.create_assistant_agent()
+
+    def init_agent_state(self, intent:str, request_message:str) -> dict[str, Any]:
+        initial_state = {
+            "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), HumanMessage(content=request_message)],
+            "input_token_statistics": 0,
+            "output_token_statistics": 0,
+            "total_token_statistics": 0,
+            "model_cycle_time": 1,
+            "current_intent": intent,
+        }
+        return initial_state
+
+    def execute(self, intent: IntentResult) -> SubAgentExecutionResult:
+        input_message = self.init_agent_state(intent.intent, self.build_request_message(intent))
+
+        try:
+            stream = self.agent.stream(
+                input=input_message,
+                config=self.config,
+                stream_mode=["messages", "updates"],
+                version="v2",
+            )
+            for chunk in stream:
+                # print(chunk)
+                if self.agent_config.print_thinking_process:
+                    if chunk["type"] == "updates":
+                        for node_name, update in chunk["data"].items():
+                            # 打印中断消息
+                            if node_name == "__interrupt__":
+                                value = update[0].value
+                                print(f"❓问题：{value['reason']}，\r\n原因：{value['course']}\r\n方案：{value['message']}")
+                    elif chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
+                        if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
+                            print(chunk["data"][0].content, end="", flush=True)
+                        if isinstance(chunk["data"][0], ToolMessage) and chunk["data"][0].name == "ask_clarification" and chunk["data"][0].content is not None:
+                            print(chunk["data"][0].content, end="", flush=True)
+
+        except Exception as e:
+            print(f"\n--- ❌ fail to deal question: {e}---")
+
+        state = self.agent.get_state(self.config).values
+        return state
+
+    def build_request_message(self, intent: IntentResult) -> str:
+        if intent.intent == "query_oncall":
+            request_message = f"获取当前oncall排班信息"
+        elif intent.intent == "query_latest_version":
+            request_message = f"获取huaweicloud terraform provider最新版本"
+        elif intent.intent == "query_reference_docs":
+            request_message = f"获取huaweicloud terraform提供者参考文档"
+        elif intent.intent == "whether_support_special_region":
+            request_message = intent.reasoning
+        elif intent.intent == "query_resource_by_name":
+            request_message = f"{intent.params["service_name"]}服务的{intent.params["resource_name"]}这个{intent.params["resource_type"]}支持吗"
+        elif intent.intent == "query_resource_by_api":
+            request_message = f"{intent.params["service_name"]}服务的{intent.params["api_method"]} {intent.params["api_url"]}这个API支持吗"
+        elif intent.intent == "query_resource_by_content":
+            request_message = f"{intent.params["service_name"]}服务支持{intent.params["context"]} 吗"
+        else:
+            request_message = ""
+
+        return request_message
+
+
+    def create_assistant_agent(self):
+        agent = create_agent(
+            name=AGENT_NAME,
+            model=self.model,
+            checkpointer=self.check_pointer,
+            # system_prompt=self.build_system_prompt_template(),
+            middleware=self.build_middlewares(),
+            state_schema=OncallAgentState
+        )
+        return agent
+
+    def build_system_prompt_template(self) -> str:
+        return apply_prompt_template(user_id=self.config["configurable"]["user_id"], agent_name=AGENT_NAME)
+
+    def build_middlewares(self) -> list[AgentMiddleware]:
+        middlewares: list[AgentMiddleware|str] = [
+            LoggingMiddleware(agent_name=AGENT_NAME),
+            DynamicToolMiddleware(agent_name=AGENT_NAME),
+            # build_system_prompt_template,
+            TokenUsageMiddleware(agent_name=AGENT_NAME),
+            # CycleCheckMiddleware(agent_name=AGENT_NAME),
+            # ContextSummarizationMiddleware(
+            #     model=self.model,
+            #     agent_name=AGENT_NAME,
+            #     trigger=[
+            #         ("messages", self.agent_config.summarization_trigger_messages),
+            #         ("tokens", self.agent_config.summarization_trigger_tokens)
+            #     ],
+            #     keep=("tokens", self.agent_config.summarization_trigger_tokens/3)
+            # ),
+            # TodoMiddleware(),
+            ContextClearMiddleware(agent_name=AGENT_NAME),
+        ]
+        return middlewares
+
+    # def build_base_tools(self) -> list[BaseTool | Callable[[Callable | Runnable], BaseTool]] | None:
+    #     tools = [
+    #         oncall_schedule,
+    #         get_latest_provider_version,
+    #         reference_docs,
+    #         read_md,
+    #     ]
+    #     return tools
