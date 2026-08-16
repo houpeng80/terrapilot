@@ -2,9 +2,10 @@ import threading
 from typing import Any
 
 from backend.sub_agent.oncall.oncall_agent import OncallAgent
+from backend.sub_agent.sub_agents import SubAgent
 
 BUILTIN_SUB_AGENTS = [
-    OncallAgent
+    OncallAgent()
 ]
 
 SUB_AGENT_CONTAIN_INTENTS = {
@@ -58,6 +59,6 @@ class SubAgentRegistry:
         with self._lock:
             return self.sub_agents[name]
 
-    def get_sub_agent_by_intent(self, intent: str) -> Any:
+    def get_sub_agent_by_intent(self, intent: str) -> SubAgent:
         with self._lock:
             return self.get_sub_agent(self.intent_to_sub_agent[intent])

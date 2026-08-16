@@ -8,11 +8,10 @@ from backend.sub_agent.sub_agents import SubAgentExecutionResult
 logger = logging.getLogger(__name__)
 
 class SubAgentScheduler:
-    def __init__(self, registry: SubAgentRegistry, timeout: float = 30.0, max_retries: int = 0):
-        self.registry = registry
+    def __init__(self, timeout: float = 30.0, max_retries: int = 3):
+        self.registry = SubAgentRegistry()
         self.timeout = timeout
-        self.max_retries = max_retries # name -> subagent实例
-
+        self.max_retries = max_retries
 
     def schedule(self, intent: IntentResult) -> SubAgentExecutionResult:
         start_time = time.time()
@@ -20,13 +19,13 @@ class SubAgentScheduler:
         last_error = None
 
         try:
-            sub_agent = self.registry.get_sub_agent(intent.intent)
+            sub_agent = self.registry.get_sub_agent_by_intent(intent.intent)
         except KeyError as e:
             return SubAgentExecutionResult(False, error=f"Sub-Agent by intent '{intent.intent}' not found", duration=0.0)
 
-        while attempt <= self.max_retries:
+        while attempt < self.max_retries:
             try:
-                result = sub_agent.execute(intent)
+                result = sub_agent.execute(intent=intent)
                 duration = time.time() - start_time
                 self._log_success(sub_agent.name, intent, result, duration)
                 return SubAgentExecutionResult(True, result=result, duration=duration)

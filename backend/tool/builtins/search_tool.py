@@ -1,7 +1,7 @@
 from langchain_core.tools import tool, ToolException
 
 from backend.utils.github_utils import get_latest_version, checkout_code, list_file, search_resource_by_key_word
-from rag.rag_manager import rag_keyword_search
+from backend.rag.rag_manager import rag_keyword_search
 
 
 @tool
