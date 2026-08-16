@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Any, Callable
 
 from langchain.agents import create_agent
@@ -21,24 +22,24 @@ from backend.middleware.context_clear_middleware import ContextClearMiddleware
 from backend.middleware.todo_Middleware import TodoMiddleware
 from backend.sub_agent.oncall.middleware.dynamic_tool_middleware import DynamicToolMiddleware
 from backend.sub_agent.oncall.prompt import apply_prompt_template
-from tool.tool_registry import ToolRegistry
+from backend.tool.tool_registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
-AGENT_NAME = "oncall-agent"
+AGENT_NAME = "oncall_agent"
 
 class OncallAgent(SubAgent):
     name:str = AGENT_NAME
-    def __init__(self, config: dict[str, Any]):
+    def __init__(self):
         super().__init__(AGENT_NAME)
         agent_config = get_agent_config()
         model = get_model(agent_config.model_type)
         self.model = model
         self.agent_config = agent_config
-        self.config = config
+        self.config = {"configurable": {"thread_id": uuid.uuid4().hex}}
         self.check_pointer = InMemorySaver()
         self.tool_registry = ToolRegistry()
-        self.agent = self.create_assistant_agent()
+        self.agent = self.create_oncall_agent()
 
     def init_agent_state(self, intent:str, request_message:str) -> dict[str, Any]:
         initial_state = {
@@ -51,7 +52,7 @@ class OncallAgent(SubAgent):
         }
         return initial_state
 
-    def execute(self, intent: IntentResult) -> SubAgentExecutionResult:
+    def execute(self, intent: IntentResult) -> str:
         input_message = self.init_agent_state(intent.intent, self.build_request_message(intent))
 
         try:
@@ -78,9 +79,10 @@ class OncallAgent(SubAgent):
 
         except Exception as e:
             print(f"\n--- ❌ fail to deal question: {e}---")
+            raise e
 
-        state = self.agent.get_state(self.config).values
-        return state
+        state = self.agent.get_state(self.config)
+        return state.values["messages"][-1].content
 
     def build_request_message(self, intent: IntentResult) -> str:
         if intent.intent == "query_oncall":
@@ -103,7 +105,7 @@ class OncallAgent(SubAgent):
         return request_message
 
 
-    def create_assistant_agent(self):
+    def create_oncall_agent(self):
         agent = create_agent(
             name=AGENT_NAME,
             model=self.model,
@@ -120,7 +122,7 @@ class OncallAgent(SubAgent):
     def build_middlewares(self) -> list[AgentMiddleware]:
         middlewares: list[AgentMiddleware|str] = [
             LoggingMiddleware(agent_name=AGENT_NAME),
-            DynamicToolMiddleware(agent_name=AGENT_NAME),
+            DynamicToolMiddleware(agent_name=AGENT_NAME,tool_registry=self.tool_registry),
             # build_system_prompt_template,
             TokenUsageMiddleware(agent_name=AGENT_NAME),
             # CycleCheckMiddleware(agent_name=AGENT_NAME),
@@ -134,7 +136,7 @@ class OncallAgent(SubAgent):
             #     keep=("tokens", self.agent_config.summarization_trigger_tokens/3)
             # ),
             # TodoMiddleware(),
-            ContextClearMiddleware(agent_name=AGENT_NAME),
+            # ContextClearMiddleware(agent_name=AGENT_NAME),
         ]
         return middlewares
 

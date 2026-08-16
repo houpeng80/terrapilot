@@ -16,13 +16,13 @@ class ContextClearMiddleware(AgentMiddleware):
         self.agent_name = agent_name
 
     @override
-    def after_agent(self, state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
+    def before_agent(self, state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
         return {
             "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES)]
         }
 
     @override
-    def aafter_agent(self, state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
+    def abefore_agent(self, state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
         return {
             "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES)]
         }

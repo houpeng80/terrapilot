@@ -32,7 +32,7 @@ class DynamicToolMiddleware(AgentMiddleware[OncallAgentState]):
             request: ModelRequest,
             handler: Callable[[ModelRequest], ModelResponse],
     ) -> ModelCallResult:
-        intent = request.state["intent"]
+        intent = request.state["current_intent"]
         tools = self.tool_registry.get_tools_by_intent(intent)
         updated_request = request.override(tools=[*request.tools, *tools])
         return handler(updated_request)
@@ -43,7 +43,7 @@ class DynamicToolMiddleware(AgentMiddleware[OncallAgentState]):
             request: ModelRequest,
             handler: Callable[[ModelRequest], ModelResponse],
     ) -> ModelCallResult:
-        intent = request.state["intent"]
+        intent = request.state["current_intent"]
         tools = self.tool_registry.get_tools_by_intent(intent)
         updated_request = request.override(tools=[*request.tools, *tools])
         return handler(updated_request)
@@ -66,12 +66,6 @@ class DynamicToolMiddleware(AgentMiddleware[OncallAgentState]):
 
     def handler_tool_call(self, tool_name: str, tool_args: Any, tool_call_id: str) -> ToolMessage | Command[Any]:
         tool_res = self.tool_executor.execute(tool_name, tool_args)
-        print("+++++++++++++++++++++++++++++++++++")
-        print("success: ", tool_res.success)
-        print("result: ", tool_res.result)
-        print("error: ", tool_res.error)
-        print("duration: ", tool_res.duration)
-        print("+++++++++++++++++++++++++++++++++++")
         if tool_res.success:
             tool_message = ToolMessage(
                 id=uuid.uuid4().hex,

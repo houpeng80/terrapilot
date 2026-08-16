@@ -14,7 +14,7 @@ from backend.middleware.log_middleware import LoggingMiddleware
 from backend.middleware.token_usage_middleware import TokenUsageMiddleware
 from backend.model import get_model
 from backend.sub_agent.intent_recognize.prompt import apply_system_prompt
-from middleware.summarization_middleware import ContextSummarizationMiddleware
+from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
 
 AGENT_NAME = "intent_recognize_agent"
 
@@ -71,7 +71,6 @@ class IntentRecognize:
                 input=agent_state,
                 config=self.config,
             )
-            print("intent_recognize result=", result)
             if "structured_response" in result:
                 return result["structured_response"]
             time.sleep(1)

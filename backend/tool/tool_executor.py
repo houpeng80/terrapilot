@@ -50,6 +50,7 @@ class ToolExecutor:
 
         duration = time.time() - start_time
         error_msg = f"Tool '{tool_name}' failed after {attempt} attempts: {last_error}"
+        print("------------------------")
         return ToolExecutionResult(False, error=error_msg, duration=duration)
 
     @staticmethod

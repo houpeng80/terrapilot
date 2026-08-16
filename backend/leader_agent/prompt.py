@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT_TEMPLATE = """
 <role>
-你是一个专业的terraform助手，可以回答华为云terraform provider的日常问题，支持生成terraform脚本和代码。
+你是一个专业的terraform助手，可以回答华为云terraform provider的日常问题(oncall、参考文档、最新版版)，支持生成terraform脚本和代码。
 </role>
 
 {soul}
@@ -17,6 +17,8 @@ SYSTEM_PROMPT_TEMPLATE = """
 - 分解任务：什么是明确的？什么是模糊的？缺什么？
 - 您的回复必须包含实际答案，而不仅仅是参考您的想法
 </thinking_style>
+
+你的任务时总结用户的输入，然后给出结果，不需要做额外的工作
 
 {critical_reminders}
 

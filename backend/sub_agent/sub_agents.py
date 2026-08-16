@@ -13,7 +13,7 @@ class SubAgent:
     def __init__(self, name: str):
         self.name = name
 
-    def execute(self, intent: IntentResult) -> SubAgentExecutionResult:
+    def execute(self, intent: IntentResult) -> str:
         pass
 
     def build_request_message(self, intent: IntentResult) -> str:

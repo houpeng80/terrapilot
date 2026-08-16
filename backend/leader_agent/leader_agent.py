@@ -48,8 +48,7 @@ class LeaderAgent:
         self.agent = self.create_terrapilot_agent()
         self.intent_recognize = IntentRecognize(config)
         self.router_manager = RouterManager(self.intent_recognize)
-        self.sub_agent_registry = SubAgentRegistry()
-        self.sub_agent_scheduler = SubAgentScheduler(self.sub_agent_registry)
+        self.sub_agent_scheduler = SubAgentScheduler()
         # init_local_code()
         # start_scheduler_sync_git_code()
 
@@ -89,14 +88,15 @@ class LeaderAgent:
         intent_res = self.intent_recognize.intent_recognize(agent_state=leader_state)
         # 路由、判断、人工确认
         route, msg = self.router_manager.router(intent_res, histories)
-        print("route: ", route)
-        print("msg: ", msg)
         if route == JUMP_TO_END:
             result_input = msg
         else:
             # 子agent调度，保存结果到history
             sub_agent_result = self.sub_agent_scheduler.schedule(intent_res)
-            print("sub_agent_result: %s", sub_agent_result)
+            print("\nsub_agent_result success: ", sub_agent_result.success)
+            print("sub_agent_result result: ", sub_agent_result.result)
+            print("sub_agent_result error: ", sub_agent_result.error)
+            print("sub_agent_result duration: ", sub_agent_result.duration)
             if not sub_agent_result.success:
                 result_input = sub_agent_result.error
             else:
@@ -119,6 +119,7 @@ class LeaderAgent:
             "output_token_statistics": leader_state["output_token_statistics"],
             "total_token_statistics": leader_state["total_token_statistics"],
             "model_cycle_time": 1,
+            "histories":histories,
         }
         try:
             stream = self.agent.stream(

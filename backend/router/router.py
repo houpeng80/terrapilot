@@ -1,5 +1,5 @@
-from leader_agent.agent_state import Intent
-from sub_agent.intent_recognize.intent_recognize import IntentRecognize, IntentResult
+from backend.leader_agent.agent_state import Intent
+from backend.sub_agent.intent_recognize.intent_recognize import IntentRecognize, IntentResult
 
 JUMP_TO_END = "jump_to_end"
 
