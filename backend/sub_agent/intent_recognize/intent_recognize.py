@@ -64,7 +64,7 @@ class IntentRecognize:
         self.config = config
         self.agent = self.create_intent_recognize_agent()
 
-    def intent_recognize(self, agent_state: TerrapilotAgentState) -> IntentResult:
+    def intent_recognize(self, agent_state: TerrapilotAgentState) -> tuple[TerrapilotAgentState, IntentResult]:
         i = 0
         while i < 3:
             result = self.agent.invoke(
@@ -72,7 +72,7 @@ class IntentRecognize:
                 config=self.config,
             )
             if "structured_response" in result:
-                return result["structured_response"]
+                return (self.agent.get_state(self.config).values, result["structured_response"])
             time.sleep(1)
         raise Exception("intent_recognize failed")
 
@@ -95,6 +95,7 @@ class IntentRecognize:
                     keep=("tokens", self.agent_config.summarization_trigger_tokens / 3)
                 ),
             ],
+            state_schema=TerrapilotAgentState,
         )
         return agent
 

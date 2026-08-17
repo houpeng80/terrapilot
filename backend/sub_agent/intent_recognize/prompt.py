@@ -11,7 +11,7 @@ def get_intents() -> str:
     - 输出：{{"history_index": "3"}}
     
 - generate_script：生成terraform脚本
-   - 示例："生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本，只生成当前的资源信息"， "帮我生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本"
+   - 示例："生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本，只生成当前的资源信息"， "生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本"
    - 输出：{{"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": false}}
    
    - 示例："生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本，生成依赖的资源信息"
