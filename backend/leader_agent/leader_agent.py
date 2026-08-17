@@ -1,9 +1,10 @@
 import logging
+import uuid
 from typing import Any, Callable
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware
-from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage, AIMessage
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import InMemorySaver
@@ -23,8 +24,8 @@ from backend.utils.github_utils import test_code_exists, clone_code, pull_code
 from backend.utils.schedule_utils import stop_scheduler_sync_git_code, start_scheduler_sync_git_code
 from backend.router.router import RouterManager, JUMP_TO_END
 from backend.sub_agent.intent_recognize.intent_recognize import IntentRecognize
-from backend.sub_agent.sub_agent_registry import SubAgentRegistry
-from backend.sub_agent.sub_agent_scheduler import SubAgentScheduler
+from backend.worker.worker_scheduler import WorkerScheduler
+from backend.worker.workers import WorkerRequest
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class LeaderAgent:
         self.agent = self.create_terrapilot_agent()
         self.intent_recognize = IntentRecognize(config)
         self.router_manager = RouterManager(self.intent_recognize)
-        self.sub_agent_scheduler = SubAgentScheduler()
+        self.worker_scheduler = WorkerScheduler()
         # init_local_code()
         # start_scheduler_sync_git_code()
 
@@ -57,7 +58,7 @@ class LeaderAgent:
         # get_memory_queue().flush()
         stop_scheduler_sync_git_code()
 
-    def init_agent_state(self, question:str, histories: list[Intent]) -> dict[str, Any]:
+    def init_agent_state(self, question:str, histories: list[Intent]) -> TerrapilotAgentState:
         initial_state = {
             "messages": [HumanMessage(content=question)],
             "histories": histories,
@@ -78,29 +79,26 @@ class LeaderAgent:
 
     def run(self, input_message: str):
         print("=================================")
-        print("state: ", self.agent.get_state(self.config))
         histories = []
         if "histories" in self.agent.get_state(self.config).values:
             histories = self.agent.get_state(self.config).values["histories"]
         leader_state = self.init_agent_state(input_message, histories)
 
         # 上下文压缩处理, 意图识别
-        intent_res = self.intent_recognize.intent_recognize(agent_state=leader_state)
+        leader_state, intent_res = self.intent_recognize.intent_recognize(agent_state=leader_state)
         # 路由、判断、人工确认
         route, msg = self.router_manager.router(intent_res, histories)
+        print("==================route: ",route)
+        print("==================msg: ",msg)
         if route == JUMP_TO_END:
             result_input = msg
         else:
             # 子agent调度，保存结果到history
-            sub_agent_result = self.sub_agent_scheduler.schedule(intent_res)
-            print("\nsub_agent_result success: ", sub_agent_result.success)
-            print("sub_agent_result result: ", sub_agent_result.result)
-            print("sub_agent_result error: ", sub_agent_result.error)
-            print("sub_agent_result duration: ", sub_agent_result.duration)
-            if not sub_agent_result.success:
-                result_input = sub_agent_result.error
+            worker_result = self.worker_scheduler.schedule(WorkerRequest(intent=intent_res.intent, params=intent_res.params, reasoning=intent_res.reasoning))
+            if not worker_result.success:
+                result_input = worker_result.error
             else:
-                result_input = sub_agent_result.result
+                result_input = worker_result.result
                 new_intent = {
                     "intent":intent_res.intent,
                     "confidence":intent_res.confidence,
@@ -113,8 +111,15 @@ class LeaderAgent:
                 self.agent.get_state(self.config).values["histories"] = histories
 
         # 主agent生成结果
-        result_state = {
-            "messages": [HumanMessage(content=result_input)],
+        tool_call_id = [message.tool_calls[0]["id"] for message in leader_state["messages"] if isinstance(message, AIMessage) and len(message.tool_calls) > 0]
+        tool_message = ToolMessage(
+            id=uuid.uuid4().hex,
+            content=result_input,
+            tool_call_id=tool_call_id[0],
+            name=f"deal_intent_{intent_res.intent}_tool_message",
+        )
+        leader_state = {
+            "messages": [*leader_state["messages"], *[tool_message]],
             "input_token_statistics": leader_state["input_token_statistics"],
             "output_token_statistics": leader_state["output_token_statistics"],
             "total_token_statistics": leader_state["total_token_statistics"],
@@ -123,7 +128,7 @@ class LeaderAgent:
         }
         try:
             stream = self.agent.stream(
-                input=result_state,
+                input=leader_state,
                 config=self.config,
                 stream_mode=["messages", "updates"],
                 version="v2",
@@ -148,9 +153,10 @@ class LeaderAgent:
 
         # 保存intent到history
 
-        state = self.agent.get_state(self.config).values
+        state = self.agent.get_state(self.config)
         print("\nlast state: %s", state)
-        print("=================================")
+        print("\n=================================")
+        # return state
         return state
 
     def create_terrapilot_agent(self):

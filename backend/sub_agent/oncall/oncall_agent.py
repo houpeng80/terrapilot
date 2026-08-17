@@ -1,35 +1,30 @@
 import logging
 import uuid
-from typing import Any, Callable
+from typing import Any
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage, RemoveMessage
-from langchain_core.runnables import Runnable
-from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 
 from backend.config.config import get_agent_config
 from backend.model import get_model
 from backend.middleware.log_middleware import LoggingMiddleware
-from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
 from backend.middleware.token_usage_middleware import TokenUsageMiddleware
 from backend.sub_agent.intent_recognize.agent_state import OncallAgentState
-from backend.sub_agent.intent_recognize.intent_recognize import IntentResult
-from backend.sub_agent.sub_agents import SubAgent, SubAgentExecutionResult
-from backend.middleware.context_clear_middleware import ContextClearMiddleware
-from backend.middleware.todo_Middleware import TodoMiddleware
 from backend.sub_agent.oncall.middleware.dynamic_tool_middleware import DynamicToolMiddleware
 from backend.sub_agent.oncall.prompt import apply_prompt_template
 from backend.tool.tool_registry import ToolRegistry
+from backend.worker.workers import Worker, WorkerRequest
 
 logger = logging.getLogger(__name__)
 
 AGENT_NAME = "oncall_agent"
 
-class OncallAgent(SubAgent):
+class OncallAgent(Worker):
     name:str = AGENT_NAME
+
     def __init__(self):
         super().__init__(AGENT_NAME)
         agent_config = get_agent_config()
@@ -52,12 +47,12 @@ class OncallAgent(SubAgent):
         }
         return initial_state
 
-    def execute(self, intent: IntentResult) -> str:
-        input_message = self.init_agent_state(intent.intent, self.build_request_message(intent))
+    def execute(self, intent: WorkerRequest) -> str:
+        agent_state = self.init_agent_state(intent.intent, self.build_request_message(intent))
 
         try:
             stream = self.agent.stream(
-                input=input_message,
+                input=agent_state,
                 config=self.config,
                 stream_mode=["messages", "updates"],
                 version="v2",
@@ -84,7 +79,7 @@ class OncallAgent(SubAgent):
         state = self.agent.get_state(self.config)
         return state.values["messages"][-1].content
 
-    def build_request_message(self, intent: IntentResult) -> str:
+    def build_request_message(self, intent: WorkerRequest) -> str:
         if intent.intent == "query_oncall":
             request_message = f"获取当前oncall排班信息"
         elif intent.intent == "query_latest_version":
@@ -139,12 +134,3 @@ class OncallAgent(SubAgent):
             # ContextClearMiddleware(agent_name=AGENT_NAME),
         ]
         return middlewares
-
-    # def build_base_tools(self) -> list[BaseTool | Callable[[Callable | Runnable], BaseTool]] | None:
-    #     tools = [
-    #         oncall_schedule,
-    #         get_latest_provider_version,
-    #         reference_docs,
-    #         read_md,
-    #     ]
-    #     return tools
