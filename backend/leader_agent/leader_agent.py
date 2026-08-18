@@ -14,7 +14,6 @@ from backend.leader_agent.agent_state import TerrapilotAgentState, Intent
 from backend.memory.queue import get_memory_queue
 from backend.middleware.dynamic_tool_middleware import DynamicToolMiddleware
 from backend.middleware.dynamic_system_porompt_middleware import build_system_prompt_template
-from backend.middleware.intent_regonize_middleware import IntentRecognizeMiddleware
 from backend.middleware.log_middleware import LoggingMiddleware
 from backend.middleware.memory_middleware import MemoryMiddleware
 from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
@@ -88,8 +87,10 @@ class LeaderAgent:
         leader_state, intent_res = self.intent_recognize.intent_recognize(agent_state=leader_state)
         # 路由、判断、人工确认
         route, msg = self.router_manager.router(intent_res, histories)
-        print("==================route: ",route)
-        print("==================msg: ",msg)
+        print("======================================================")
+        print("route: ",route)
+        print("msg: ",msg)
+        print("======================================================")
         if route == JUMP_TO_END:
             result_input = msg
         else:
@@ -154,7 +155,7 @@ class LeaderAgent:
         # 保存intent到history
 
         state = self.agent.get_state(self.config)
-        print("\nlast state: %s", state)
+        # print("\nlast state: %s", state)
         print("\n=================================")
         # return state
         return state

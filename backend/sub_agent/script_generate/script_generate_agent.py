@@ -24,6 +24,7 @@ class ScriptGenerateAgent(Worker):
     name: str = AGENT_NAME
 
     def __init__(self):
+        super().__init__(AGENT_NAME)
         agent_config = get_agent_config()
         self.model = get_model(agent_config.model_type)
         self.config = {"configurable": {"thread_id": uuid.uuid4().hex}}
