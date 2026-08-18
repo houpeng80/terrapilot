@@ -25,9 +25,6 @@ class WorkerScheduler:
         while attempt < self.max_retries:
             try:
                 result = worker.execute(intent=request)
-                print("==========================")
-                print("result: ", result)
-                print("==========================")
                 duration = time.time() - start_time
                 self._log_success(worker.name, request, result, duration)
                 return WorkerExecutionResult(True, result=result, duration=duration)

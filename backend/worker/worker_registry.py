@@ -1,13 +1,15 @@
 import threading
 from typing import Any
 
+from backend.sub_agent.code_generate.plan_and_execute.generate_code_agent import CodeGenerateAgent
 from backend.sub_agent.oncall.oncall_agent import OncallAgent
 from backend.sub_agent.script_generate.script_generate_agent import ScriptGenerateAgent
 from backend.worker.workers import Worker
 
 BUILTIN_WORKERS = [
     OncallAgent(),
-    ScriptGenerateAgent()
+    ScriptGenerateAgent(),
+    CodeGenerateAgent()
 ]
 
 WORKER_INTENTS = {

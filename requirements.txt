@@ -1,4 +1,6 @@
 numpy==1.26.4
+vipertls==0.1.8
+aiofiles==22.1.0
 langchain==1.2.16
 langchain-chroma==1.1.0
 langchain-core==1.4.0

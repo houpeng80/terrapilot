@@ -78,6 +78,7 @@ class IntentRecognize:
 
     def create_intent_recognize_agent(self):
         agent = create_agent(
+            name=AGENT_NAME,
             model=self.model,
             checkpointer=self.check_pointer,
             system_prompt=apply_system_prompt(),

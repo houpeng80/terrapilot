@@ -103,3 +103,91 @@ print_thinking_process: true
 # Where open tool call trace, true/false, defaults to false
 # ============================================================================
 open_tool_call_trace: true
+
+# ============================================================================
+# Plan and execute type (graph/fixed_step/dynamic_step), defaults to dynamic_step
+# this model contain plan and execute parts, the plan is used to make plan of the task,
+# and the execute part is used to complete the task.
+#
+# 1. graph: it indicates the planner will create a langgraph, and the executor will execute the graph
+# 2. fixed_step: it indicates the planner will plan a fixed tasks list, and the executor will execute the task in order
+# 3. dynamic_step: it indicates the planner will plan a tasks list all by itself, and the executor will execute the task
+#    in order, because the tasks is planed by the model, the result may not meet the user requirements, a plan check and
+#    replanner is needed
+# ============================================================================
+execute_type: dynamic_step
+
+# ============================================================================
+# The max tokens of the code generate model, defaults to 2048
+# ============================================================================
+code_generate_max_tokens: 9192
+
+# ============================================================================
+# The messages count when code generate summarization is triggered, defaults to 10
+# ============================================================================
+code_generate_summarization_trigger_messages: 10
+
+# ============================================================================
+# The tokens count when code generate summarization is triggered, defaults to 1024
+# ============================================================================
+code_generate_summarization_trigger_tokens: 8000
+
+# ============================================================================
+# Generate code, whether generate code, defaults to true
+# ============================================================================
+generate_code: true
+
+# ============================================================================
+# Code check, whether check the code when code is generated, defaults to true
+# ============================================================================
+code_check: true
+
+# ============================================================================
+# Code fix, whether fix the code when the code should be fixed, defaults to true
+# ============================================================================
+code_fix: false
+
+# ============================================================================
+# The code_retries when generate code, defaults to 3
+# ============================================================================
+code_retries: 3
+
+# ============================================================================
+# Generate test, whether generate test, defaults to true
+# ============================================================================
+generate_test: true
+
+# ============================================================================
+# Test check, whether check the test when test is generated, defaults to true
+# ============================================================================
+test_check: true
+
+# ============================================================================
+# Test fix, whether fix the test when the test should be fixed, defaults to true
+# ============================================================================
+test_fix: true
+
+# ============================================================================
+# The test_retries when generate test, defaults to 3
+# ============================================================================
+test_retries: 3
+
+# ============================================================================
+# Generate doc, whether generate doc, defaults to true
+# ============================================================================
+generate_doc: true
+
+# ============================================================================
+# Doc check, whether check the doc when doc is generated, defaults to true
+# ============================================================================
+doc_check: true
+
+# ============================================================================
+# Doc fix, whether fix the doc when the doc should be fixed, defaults to true
+# ============================================================================
+doc_fix: true
+
+# ============================================================================
+# The doc_retries when generate doc, defaults to 3
+# ============================================================================
+doc_retries: 3
