@@ -1,6 +1,5 @@
 from langchain.agents import AgentState
 
-
 class ScriptAgentState(AgentState):
     """生成terraform代码的共享状态"""
 

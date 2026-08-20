@@ -8,7 +8,6 @@ from langgraph.types import Checkpointer
 
 from backend.config.config import AgentConfig
 from backend.middleware.log_middleware import LoggingMiddleware
-from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
 from backend.middleware.token_usage_middleware import TokenUsageMiddleware
 from backend.sub_agent.code_generate.agents.agent_state import CodeAgentState
 from backend.sub_agent.code_generate.agents.code_agent.data_source_agent.data_source_code_generate import \
@@ -20,6 +19,7 @@ from backend.sub_agent.code_generate.agents.docs_agents.resource_agent.resource_
 from backend.sub_agent.code_generate.agents.test_agent.data_source_agent.data_source_test_generate import \
     DataSourceTestGenerate
 from backend.sub_agent.code_generate.agents.test_agent.resource_agent.resource_test_generate import ResourceTestGenerate
+from backend.sub_agent.code_generate.middleware.summarization_middleware import ContextSummarizationMiddleware
 from backend.sub_agent.code_generate.plan_and_execute.dynamic_steps.prompt import PLANNER_PROMPT_TEMPLATE
 from backend.sub_agent.code_generate.plan_and_execute.dynamic_steps.response import DynamicStepPlannerResponse
 from backend.sub_agent.code_generate.plan_and_execute.planner import Planner
@@ -153,7 +153,8 @@ class DynamicStepPlanner(Planner):
                 trigger=[
                     ("messages", self.agent_config.summarization_trigger_messages),
                     ("tokens", self.agent_config.summarization_trigger_tokens)
-                ]
+                ],
+                keep = ("tokens", self.agent_config.summarization_trigger_tokens / 3)
             ),
         ]
         return middlewares

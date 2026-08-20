@@ -99,6 +99,7 @@ class MemoryUpdateQueue:
         logger.info("Memory update queued for immediate processing on thread %s, queue size: %d", thread_id, len(self._queue))
 
     def flush(self):
+        logger.info("Memory update queued for flush")
         self._process_queue()
 
     def _enqueue_locked(
@@ -156,13 +157,9 @@ class MemoryUpdateQueue:
 
         with self._lock:
             if self._processing:
-                # Preserve immediate flush semantics even if another worker is active.
-                self._schedule_timer(0)
                 return
-
             if not self._queue:
                 return
-
             self._processing = True
             contexts_to_process = self._queue.copy()
             self._queue.clear()

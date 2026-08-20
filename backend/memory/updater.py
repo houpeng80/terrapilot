@@ -32,7 +32,7 @@ def _save_memory_to_file(memory_data: dict[str, Any], user_id: str) -> bool:
     return get_memory_storage().save(memory_data, user_id=user_id)
 
 
-def get_memory_data(user_id: str) -> dict[str, Any]:
+def get_memory_data(user_id: str) -> dict[str, Any] | str:
     """Get the current memory data via storage provider."""
     return get_memory_storage().load(user_id=user_id)
 
@@ -295,7 +295,7 @@ class MemoryUpdater:
                 return False
 
             current_memory, prompt = prepared
-            model = get_model(get_agent_config().model_type)
+            model = get_model(get_agent_config().model_type, True)
 
             # invoke model to summary messages
             response = await model.ainvoke(prompt, config={"run_name": "memory_agent"})

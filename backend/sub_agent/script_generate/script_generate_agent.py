@@ -10,7 +10,10 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 
 from backend.config.config import get_agent_config
+from backend.middleware.cycle_check_middleware import CycleCheckMiddleware
 from backend.middleware.log_middleware import LoggingMiddleware
+from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
+from backend.middleware.todo_Middleware import TodoMiddleware
 from backend.middleware.token_usage_middleware import TokenUsageMiddleware
 from backend.model import get_model
 from backend.sub_agent.script_generate.agent_state import ScriptAgentState
@@ -60,8 +63,6 @@ class ScriptGenerateAgent(Worker):
                         if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
                             print(chunk["data"][0].content, end="", flush=True)
 
-            # generate_result = f"generate_{self.get_generate_type()}_complete"
-            # print(f"\n--- ✅ generate {agent_state["resource_type"]} {self.get_generate_type()} complete ---")
         except Exception as e:
             raise e
 
@@ -99,27 +100,21 @@ class ScriptGenerateAgent(Worker):
 
     def build_middlewares(self) -> list[AgentMiddleware]:
         middlewares: list[AgentMiddleware] = [
-            # RetryCheckMiddleware(agent_name=AGENT_NAME, agent_config=self.agent_config),
             LoggingMiddleware(agent_name=AGENT_NAME),
             TokenUsageMiddleware(agent_name=AGENT_NAME),
-            # SummarizationMiddleware(
-            #     model=self.model,
-            #     trigger=[
-            #         ("messages", self.agent_config.summarization_trigger_messages),
-            #         ("tokens", self.agent_config.summarization_trigger_tokens)
-            #     ],
-            # ),
-            # TodoMiddleware(agent_name=AGENT_NAME),
-            # CodeCheckMiddleware(
-            #     model=self.model,
-            #     agent_name=AGENT_NAME,
-            #     agent_config=self.agent_config,
-            #     checkpointer=self.check_pointer,
-            #     config=self.config,
-            # ),
+            CycleCheckMiddleware(agent_name=AGENT_NAME),
+            ContextSummarizationMiddleware(
+                model=self.model,
+                agent_name=AGENT_NAME,
+                trigger=[
+                    ("messages", self.agent_config.summarization_trigger_messages),
+                    ("tokens", self.agent_config.summarization_trigger_tokens)
+                ],
+                keep=("tokens", self.agent_config.summarization_trigger_tokens / 3)
+            ),
+            TodoMiddleware(agent_name=AGENT_NAME),
         ]
         return middlewares
 
-    # @staticmethod
     def build_tools(self) -> list[BaseTool | Callable[[Callable | Runnable], BaseTool]] | None:
         return [read_md]

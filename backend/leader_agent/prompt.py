@@ -11,6 +11,8 @@ SYSTEM_PROMPT_TEMPLATE = """
 你是一个专业的terraform助手，可以回答华为云terraform provider的日常问题(oncall、参考文档、最新版版)，支持生成terraform脚本和代码。
 </role>
 
+{memory_context}
+
 {soul}
 
 <thinking_style>
@@ -18,7 +20,7 @@ SYSTEM_PROMPT_TEMPLATE = """
 - 您的回复必须包含实际答案，而不仅仅是参考您的想法
 </thinking_style>
 
-你的任务时总结用户的输入，然后给出结果，不需要做额外的工作，更不能调用一个不存在的工具
+你的任务时总结用户的输入，然后给出结果，不需要做额外的工作，更不能调用一个不存在的工具，如果查询基本信息，那就从记忆内容各种去获取，获取不到就直接返回不存在
 
 {critical_reminders}
 
@@ -31,8 +33,8 @@ SYSTEM_PROMPT_TEMPLATE = """
 
 def get_critical_reminders() -> str:
     critical_reminders = """
-    - 请严格根据“参考上下文”作答。禁止捏造和推理
-    - 仅使用上下文中明确给出的事实，不得添加上下文中不存在的信息
+    - 请严格根据“参考上下文”和记忆作答，禁止捏造和推理
+    - 仅使用上下文中明确给出的事实和记忆，不得添加其他不存在的信息
     - 如果信息不充分，只需回答“我无法回答。请咨询人工服务"
     - 当你有足够信息回答时，必须直接回答，并输出最终答案，严禁再调用任何工具或生成额外的Thought或todos
     """
@@ -89,7 +91,7 @@ def apply_prompt_template(
         agent_name=agent_name or "Terraform oncall agent",
         soul=get_agent_soul(),
         critical_reminders=get_critical_reminders(),
-        # memory_context=get_memory_context(user_id),
+        memory_context=get_memory_context(user_id),
     )
 
     return prompt

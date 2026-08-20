@@ -2,7 +2,6 @@ from langchain_core.tools import tool
 
 from backend.utils.github_utils import get_latest_version
 
-
 @tool
 def get_latest_provider_version()->str:
     """

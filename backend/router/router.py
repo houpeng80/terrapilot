@@ -14,7 +14,7 @@ class RouterManager:
             formatted_message = "\n".join(message_parts)
             return JUMP_TO_END, formatted_message
 
-        if intent.intent == "unknown":
+        if intent.intent == "unknown" or intent.intent == "base_info":
             return JUMP_TO_END, intent.reasoning
             
         if intent.intent == "history_record":

@@ -34,7 +34,7 @@ class AgentConfig(BaseModel):
     user_memory: bool = Field(default=True, description="Whether use user memory or not")
     debounce_seconds: int = Field(default=10, ge=1, le=30, description="Seconds to wait before processing queued updates (debounce)")
     fact_confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum confidence threshold for storing facts")
-    max_facts: int = Field(default=50, ge=10, le=100, description="Maximum number of facts to store")
+    max_facts: int = Field(default=10, ge=1, le=50, description="Maximum number of facts to store")
     max_injection_tokens: int = Field(
         default=1000,
         ge=100,

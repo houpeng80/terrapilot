@@ -9,6 +9,8 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 
 from backend.config.config import get_agent_config
+from backend.middleware.cycle_check_middleware import CycleCheckMiddleware
+from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
 from backend.model import get_model
 from backend.middleware.log_middleware import LoggingMiddleware
 from backend.middleware.token_usage_middleware import TokenUsageMiddleware
@@ -57,20 +59,19 @@ class OncallAgent(Worker):
                 stream_mode=["messages", "updates"],
                 version="v2",
             )
-            for chunk in stream:
-                # print(chunk)
-                if self.agent_config.print_thinking_process:
-                    if chunk["type"] == "updates":
-                        for node_name, update in chunk["data"].items():
-                            # 打印中断消息
-                            if node_name == "__interrupt__":
-                                value = update[0].value
-                                print(f"❓问题：{value['reason']}，\r\n原因：{value['course']}\r\n方案：{value['message']}")
-                    elif chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
-                        if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
-                            print(chunk["data"][0].content, end="", flush=True)
-                        if isinstance(chunk["data"][0], ToolMessage) and chunk["data"][0].name == "ask_clarification" and chunk["data"][0].content is not None:
-                            print(chunk["data"][0].content, end="", flush=True)
+            # for chunk in stream:
+                # if self.agent_config.print_thinking_process:
+                #     if chunk["type"] == "updates":
+                #         for node_name, update in chunk["data"].items():
+                #             # 打印中断消息
+                #             if node_name == "__interrupt__":
+                #                 value = update[0].value
+                #                 print(f"❓问题：{value['reason']}，\r\n原因：{value['course']}\r\n方案：{value['message']}")
+                #     elif chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
+                #         if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
+                #             print(chunk["data"][0].content, end="", flush=True)
+                #         if isinstance(chunk["data"][0], ToolMessage) and chunk["data"][0].name == "ask_clarification" and chunk["data"][0].content is not None:
+                #             print(chunk["data"][0].content, end="", flush=True)
 
         except Exception as e:
             print(f"\n--- ❌ fail to deal question: {e}---")
@@ -105,32 +106,29 @@ class OncallAgent(Worker):
             name=AGENT_NAME,
             model=self.model,
             checkpointer=self.check_pointer,
-            # system_prompt=self.build_system_prompt_template(),
+            system_prompt=self.build_system_prompt_template(),
             middleware=self.build_middlewares(),
             state_schema=OncallAgentState
         )
         return agent
 
     def build_system_prompt_template(self) -> str:
-        return apply_prompt_template(user_id=self.config["configurable"]["user_id"], agent_name=AGENT_NAME)
+        return apply_prompt_template(agent_name=AGENT_NAME)
 
     def build_middlewares(self) -> list[AgentMiddleware]:
         middlewares: list[AgentMiddleware|str] = [
             LoggingMiddleware(agent_name=AGENT_NAME),
             DynamicToolMiddleware(agent_name=AGENT_NAME,tool_registry=self.tool_registry),
-            # build_system_prompt_template,
             TokenUsageMiddleware(agent_name=AGENT_NAME),
-            # CycleCheckMiddleware(agent_name=AGENT_NAME),
-            # ContextSummarizationMiddleware(
-            #     model=self.model,
-            #     agent_name=AGENT_NAME,
-            #     trigger=[
-            #         ("messages", self.agent_config.summarization_trigger_messages),
-            #         ("tokens", self.agent_config.summarization_trigger_tokens)
-            #     ],
-            #     keep=("tokens", self.agent_config.summarization_trigger_tokens/3)
-            # ),
-            # TodoMiddleware(),
-            # ContextClearMiddleware(agent_name=AGENT_NAME),
+            CycleCheckMiddleware(agent_name=AGENT_NAME),
+            ContextSummarizationMiddleware(
+                model=self.model,
+                agent_name=AGENT_NAME,
+                trigger=[
+                    ("messages", self.agent_config.summarization_trigger_messages),
+                    ("tokens", self.agent_config.summarization_trigger_tokens)
+                ],
+                keep=("tokens", self.agent_config.summarization_trigger_tokens/3)
+            ),
         ]
         return middlewares

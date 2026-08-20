@@ -1,10 +1,7 @@
 import os
-import httpx
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
-
-from zai import ZhipuAiClient
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_openai.chat_models.base import BaseChatOpenAI
@@ -116,7 +113,7 @@ def get_model(model_type = get_agent_config().model_type, code_generate: bool = 
     return model
 
 if __name__ == "__main__":
-    model = get_model("qwen")
+    model = get_model("doubao")
     res = model.invoke("你好啊")
     print(res)
     # import zai

@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from langchain.agents.middleware import AgentMiddleware, SummarizationMiddleware
+from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool

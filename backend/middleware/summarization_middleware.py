@@ -1,37 +1,42 @@
-import asyncio
 import logging
-from typing import override
+from typing import override, runtime_checkable, Protocol
 
 from langchain.agents import AgentState
 from langchain.agents.middleware import SummarizationMiddleware
-from langchain_core.messages import HumanMessage, RemoveMessage
+from langchain_core.messages import HumanMessage, RemoveMessage, AnyMessage
 from langgraph.config import get_config
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langgraph.runtime import Runtime
 
-from backend.memory.message_processing import detect_correction, filter_messages_for_memory, detect_reinforcement
-from backend.memory.queue import get_memory_queue
+from backend.memory.summarization_hook import SummarizationEvent
 
 logger = logging.getLogger(__name__)
+
+@runtime_checkable
+class BeforeSummarizationHook(Protocol):
+
+    def __call__(self, event: SummarizationEvent) -> None: ...
 
 class ContextSummarizationMiddleware(SummarizationMiddleware):
 
     def __init__(
-            self,
-            *args,
-            agent_name: str | None = None,
-            **kwargs,
+        self,
+        *args,
+        agent_name: str | None = None,
+        before_summarization: list[BeforeSummarizationHook] | None = None,
+        **kwargs,
     ):
         super().__init__(*args,**kwargs)
         self._agent_name = agent_name
+        self._before_summarization_hooks = before_summarization
 
     def before_model(self, state: AgentState, runtime: Runtime) -> dict | None:
-        return self._maybe_summarize(state)
+        return self._maybe_summarize(state, runtime)
 
     async def abefore_model(self, state: AgentState, runtime: Runtime) -> dict | None:
-        return await self._amaybe_summarize(state)
+        return await self._amaybe_summarize(state, runtime)
 
-    def _maybe_summarize(self, state: AgentState) -> dict | None:
+    def _maybe_summarize(self, state: AgentState, runtime: Runtime) -> dict | None:
         messages = state["messages"]
         self._ensure_message_ids(messages)
 
@@ -46,22 +51,22 @@ class ContextSummarizationMiddleware(SummarizationMiddleware):
         logger.info(f" begin to summarization the context message, messages length: {messages.__len__()}")
 
         messages_to_summarize, preserved_messages = self._partition_messages(messages, cutoff_index)
-        # summary = self._create_summary(messages_to_summarize)
-        # new_messages = self._build_new_messages(summary)
+        summary = self._create_summary(messages_to_summarize)
+        new_messages = self._build_new_messages(summary)
         logger.info(f" end summarization the context message")
 
         # 将要压缩的messages异步更新持久记忆
-        asyncio.run(self.aupdate_memory(messages_to_summarize))
+        self._fire_hooks(messages_to_summarize, preserved_messages, runtime)
 
         return {
             "messages": [
                 RemoveMessage(id=REMOVE_ALL_MESSAGES),
-                # *new_messages,
+                *new_messages,
                 *preserved_messages,
             ]
         }
 
-    async def _amaybe_summarize(self, state: AgentState) -> dict | None:
+    async def _amaybe_summarize(self, state: AgentState, runtime: Runtime) -> dict | None:
         messages = state["messages"]
         self._ensure_message_ids(messages)
 
@@ -76,17 +81,17 @@ class ContextSummarizationMiddleware(SummarizationMiddleware):
         logger.info(" begin to summarization the context message, messages length: ", messages.__len__())
 
         messages_to_summarize, preserved_messages = self._partition_messages(messages, cutoff_index)
-        # summary = await self._acreate_summary(messages_to_summarize)
-        # new_messages = self._build_new_messages(summary)
+        summary = await self._acreate_summary(messages_to_summarize)
+        new_messages = self._build_new_messages(summary)
         logger.info("end summarization the context message")
 
         # 将要压缩的messages异步更新持久记忆
-        asyncio.run(self.aupdate_memory(messages_to_summarize))
+        self._fire_hooks(messages_to_summarize, preserved_messages, runtime)
 
         return {
             "messages": [
                 RemoveMessage(id=REMOVE_ALL_MESSAGES),
-                # *new_messages,
+                *new_messages,
                 *preserved_messages,
             ]
         }
@@ -98,24 +103,30 @@ class ContextSummarizationMiddleware(SummarizationMiddleware):
         """
         return [HumanMessage(content=f"Here is a summary of the conversation to date:\n\n{summary}", name="summary")]
 
-    async def aupdate_memory(self, summary_messages):
-        thread_id = get_config().get("configurable", {}).get("thread_id")
-        user_id = get_config().get("configurable", {}).get("user_id")
-
-        filtered_messages = filter_messages_for_memory(summary_messages)
-        user_messages = [m for m in filtered_messages if getattr(m, "type", None) == "human"]
-        assistant_messages = [m for m in filtered_messages if getattr(m, "type", None) == "ai"]
-        if not user_messages or not assistant_messages:
+    def _fire_hooks(
+        self,
+        messages_to_summarize: list[AnyMessage],
+        preserved_messages: list[AnyMessage],
+        runtime: Runtime,
+    ) -> None:
+        if not self._before_summarization_hooks:
             return
 
-        correction_detected = detect_correction(filtered_messages)
-        reinforcement_detected = not correction_detected and detect_reinforcement(filtered_messages)
-        queue = get_memory_queue()
-        queue.add_nowait(
+        thread_id = get_config().get("configurable", {}).get("thread_id")
+        user_id = get_config().get("configurable", {}).get("user_id")
+        event = SummarizationEvent(
+            messages_to_summarize=tuple(messages_to_summarize),
+            preserved_messages=tuple(preserved_messages),
             thread_id=thread_id,
-            messages=filtered_messages,
-            agent_name=self._agent_name,
             user_id=user_id,
-            correction_detected=correction_detected,
-            reinforcement_detected=reinforcement_detected,
+            agent_name=self._agent_name,
+            runtime=runtime,
         )
+
+        for hook in self._before_summarization_hooks:
+            try:
+                hook(event)
+            except Exception:
+                hook_name = getattr(hook, "__name__", None) or type(hook).__name__
+                logger.exception("before_summarization hook %s failed", hook_name)
+
