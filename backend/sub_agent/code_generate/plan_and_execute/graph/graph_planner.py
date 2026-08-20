@@ -8,9 +8,9 @@ from langgraph.types import Checkpointer
 
 from backend.config.config import AgentConfig
 from backend.middleware.log_middleware import LoggingMiddleware
-from backend.middleware.summarization_middleware import ContextSummarizationMiddleware
 from backend.middleware.token_usage_middleware import TokenUsageMiddleware
 from backend.sub_agent.code_generate.agents.agent_state import CodeAgentState
+from backend.sub_agent.code_generate.middleware.summarization_middleware import ContextSummarizationMiddleware
 from backend.sub_agent.code_generate.plan_and_execute.graph.build_graph import build_data_source_graph
 from backend.sub_agent.code_generate.plan_and_execute.graph.prompt import PLANNER_PROMPT_TEMPLATE
 from backend.sub_agent.code_generate.plan_and_execute.graph.response import GraphPlannerResponse
@@ -116,7 +116,8 @@ class GraphPlanner(Planner):
                 trigger=[
                     ("messages", self.agent_config.summarization_trigger_messages),
                     ("tokens", self.agent_config.summarization_trigger_tokens)
-                ]
+                ],
+                keep = ("tokens", self.agent_config.summarization_trigger_tokens / 3)
             ),
         ]
         return middlewares

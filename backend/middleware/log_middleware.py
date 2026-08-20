@@ -34,7 +34,7 @@ logging.basicConfig(level=logging_level,
                     filename=Path(__file__).parents[2] / "terrapilot.log")
 logger = logging.getLogger(__name__)
 
-TOOL_CALL_TRACE_PATH = Path(__file__).parents[2] / "benckmark"
+TOOL_CALL_TRACE_PATH = Path(__file__).parents[2] / "benchmark"
 
 class LoggingMiddleware(AgentMiddleware):
 

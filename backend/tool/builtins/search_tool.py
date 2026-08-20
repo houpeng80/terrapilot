@@ -3,7 +3,6 @@ from langchain_core.tools import tool, ToolException
 from backend.utils.github_utils import get_latest_version, checkout_code, list_file, search_resource_by_key_word
 from backend.rag.rag_manager import rag_keyword_search
 
-
 @tool
 def resource_search_tool(service_name: str, resource_type: str, resource_name: str) -> bool:
     """ this tool is used to check whether the resource/data_source is exist or not,

@@ -2,29 +2,39 @@ def get_intents() -> str:
     intents = """
 - history_record：查询之前的结果，你需要判断具体是之前第几个问题
     - 示例："上一个问题"、 "上一轮结果"、 "前一个问题"
-    - 输出：{{"history_index": "1"}}
+    - 输出：{{"intent": "history_record", "confidence": 0.95, "reasoning": "用户查询前一个问题", params: {"history_index":"1"}}}
     
     - 示例："上上个问题"、 "前边第二个问题"、 "前边第二个结果"
-    - 输出：{{"history_index": "2"}}
+    - 输出：{{"intent": "history_record", "confidence": 0.95, "reasoning": "用户查询上上个问题", params: {"history_index":"2"}}}
     
     - 示例："上上上个问题"、 "前边第三个问题"、 "前边第三个结果"
-    - 输出：{{"history_index": "3"}}
+    - 输出：{{"intent": "history_record", "confidence": 0.95, "reasoning": "用户查询上上上个问题", params: {"history_index":"3"}}}
+    
+- base_info：用户在描述一些自己的基本信息，或者是查询自己的信息，如：名字、年龄、性别、爱好、特长、我是谁、我喜欢什么等
+    - 示例："我叫张三"
+    - 输出：{{"intent": "base_info", "confidence": 0.95, "reasoning": "用户说明自己叫张三"}}
+    
+    - 示例："关注数据库"
+    - 输出：{{"intent": "base_info", "confidence": 0.95, "reasoning": "用户说明自己关注数据库"}}
+    
+    - 示例："重点关注gaussdb"
+    - 输出：{{"intent": "base_info", "confidence": 0.95, "reasoning": "用户说明自己重点关注gaussdb"}}
     
 - generate_script：生成terraform脚本
    - 示例："生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本，只生成当前的资源信息"， "生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本"
-   - 输出：{{"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": false}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": false}, "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本，生成依赖的资源信息"
-   - 输出：{{"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": true}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": true}, "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成 huaweicloud_rds_mysql_account 的terraform脚本，只生成当前的资源信息"
-   - 输出：{{"resource_name": "huaweicloud_rds_mysql_account", "contain_reference": false, "missing_params":["resource_type"]}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "contain_reference": false}, "missing_params":["resource_type"], "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成terraform脚本，只生成当前的资源信息"
-   - 输出：{{"contain_reference": false, "missing_params":["resource_name", "resource_type"]}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"contain_reference": false}, "missing_params":["resource_name", "resource_type"], "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成terraform脚本"
-   - 输出：{{"contain_reference": false, "missing_params":["resource_name", "resource_type"]}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"contain_reference": true}, "missing_params":["resource_name", "resource_type"], "reasoning": "用户生成rds mysql脚本"}}
    
 - generate_code：生成terraform代码
    - 示例："根据以下API，生成一个resource:
@@ -41,13 +51,14 @@ def get_intents() -> str:
         查询任务API：https://support.huaweicloud.com/api-gaussdb/gaussdb_api_129.html", "resource_type": "resource"}}
         
    - 示例："根据以下API，生成一个 data_source:https://support.huaweicloud.com/api-rds/rds_06_0056.html"
-   - 输出：{{"input": "根据以下API，帮我生成一个data_source: https://support.huaweicloud.com/api-rds/rds_06_0056.html", "resource_type": "data_source"}}
+   - 输出：{{"intent": "generate_code", "confidence": 0.95, params: {"input": "根据以下API，帮我生成一个data_source: https://support.huaweicloud.com/api-rds/rds_06_0056.html", "resource_type": "data_source"}, "reasoning": "用户要生成data_source"}}
    
    - 示例："根据以下API，生成一个资源:https://support.huaweicloud.com/api-rds/rds_06_0056.html"
    - 输出：{{"input": "根据以下API，帮我生成一个data_source: https://support.huaweicloud.com/api-rds/rds_06_0056.html", "missing_params":["resource_type"]}}
+   - 输出：{{"intent": "generate_code", "confidence": 0.95, params: {"input": "根据以下API，帮我生成一个资源: https://support.huaweicloud.com/api-rds/rds_06_0056.html"}, "missing_params":["resource_type"], "reasoning": "用户要生成资源"}}
    
    - 示例："根据以下API，生成一个资源"
-   - 输出：{{"input": "根据以下API，帮我生成一个data_source: https://support.huaweicloud.com/api-rds/rds_06_0056.html", "missing_params":["resource_type", "api_url"]}}
+   - 输出：{{"intent": "generate_code", "confidence": 0.95, params: {"input": "根据以下API，生成一个资源"}, "missing_params":["resource_type", "api_url"], "reasoning": "用户要生成资源"}}
    
    
 - query_oncall：查询当前oncall的排班信息。
@@ -109,6 +120,7 @@ def get_intents() -> str:
 
 def get_critical_reminders() -> str:
     critical_reminders = """
+    - 你只能识别最新的用户意图
     - 如果用户的意图发生了改变，那么你需要把之前的意图删掉，然后使用最新的用户意图
     - 如果只是补充参数则坚决不能修改意图
     - 所有的参数都必须是用户明确的输入，不能自己编造，也不能猜测，如果用户没有输入，就设置为空

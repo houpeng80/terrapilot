@@ -1,4 +1,3 @@
-
 def apply_prompt_template(
     agent_name: str | None = None,
 ) -> str:

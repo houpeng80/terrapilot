@@ -1,18 +1,17 @@
 import logging
 import uuid
-from typing import Any, Callable
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import HumanMessage, AIMessageChunk, ToolMessage, AIMessage
-from langchain_core.runnables import Runnable, RunnableConfig
-from langchain_core.tools import BaseTool
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 
 from backend.config.config import get_agent_config
 from backend.leader_agent.agent_state import TerrapilotAgentState, Intent
 from backend.memory.queue import get_memory_queue
-from backend.middleware.dynamic_tool_middleware import DynamicToolMiddleware
+from backend.memory.summarization_hook import memory_flush_hook
+from backend.middleware.cycle_check_middleware import CycleCheckMiddleware
 from backend.middleware.dynamic_system_porompt_middleware import build_system_prompt_template
 from backend.middleware.log_middleware import LoggingMiddleware
 from backend.middleware.memory_middleware import MemoryMiddleware
@@ -53,8 +52,6 @@ class LeaderAgent:
         # start_scheduler_sync_git_code()
 
     def __del__(self):
-        # save thc cache queue to memory
-        # get_memory_queue().flush()
         stop_scheduler_sync_git_code()
 
     def init_agent_state(self, question:str, histories: list[Intent]) -> TerrapilotAgentState:
@@ -72,15 +69,18 @@ class LeaderAgent:
         while True:
             user_input = input("\nUser: ")
             if user_input.lower() in ["q", "quit"]:
+                # save thc cache queue to memory
+                get_memory_queue().flush()
                 break
 
             self.run(user_input)
 
     def run(self, input_message: str):
-        print("=================================")
         histories = []
         if "histories" in self.agent.get_state(self.config).values:
             histories = self.agent.get_state(self.config).values["histories"]
+            if len(histories) > 10:
+                histories = histories[:10]
         leader_state = self.init_agent_state(input_message, histories)
 
         # 上下文压缩处理, 意图识别
@@ -152,12 +152,7 @@ class LeaderAgent:
         except Exception as e:
             print(f"\n--- ❌ fail to deal question: {e}---")
 
-        # 保存intent到history
-
         state = self.agent.get_state(self.config)
-        # print("\nlast state: %s", state)
-        print("\n=================================")
-        # return state
         return state
 
     def create_terrapilot_agent(self):
@@ -165,41 +160,27 @@ class LeaderAgent:
             name=AGENT_NAME,
             model=self.model,
             checkpointer=self.check_pointer,
-            # system_prompt=self.build_system_prompt_template(),
             middleware=self.build_middlewares(),
-            tools=self.build_base_tools(),
             state_schema=TerrapilotAgentState
         )
         return agent
-
-    # def build_system_prompt_template(self) -> str:
-    #     return apply_prompt_template(user_id=self.config["configurable"]["user_id"], agent_name=AGENT_NAME)
 
     def build_middlewares(self) -> list[AgentMiddleware]:
         middlewares: list[AgentMiddleware|str] = [
             LoggingMiddleware(agent_name=AGENT_NAME),
             build_system_prompt_template,
             TokenUsageMiddleware(agent_name=AGENT_NAME),
-            # CycleCheckMiddleware(agent_name=AGENT_NAME),
-            MemoryMiddleware(agent_name=AGENT_NAME),
+            CycleCheckMiddleware(agent_name=AGENT_NAME),
             ContextSummarizationMiddleware(
                 model=self.model,
                 agent_name=AGENT_NAME,
+                before_summarization=[memory_flush_hook],
                 trigger=[
                     ("messages", self.agent_config.summarization_trigger_messages),
                     ("tokens", self.agent_config.summarization_trigger_tokens)
                 ],
                 keep=("tokens", self.agent_config.summarization_trigger_tokens/3)
             ),
-            # TodoMiddleware(),
+            MemoryMiddleware(agent_name=AGENT_NAME),
         ]
         return middlewares
-
-    def build_base_tools(self) -> list[BaseTool | Callable[[Callable | Runnable], BaseTool]] | None:
-        tools = [
-            # oncall_schedule,
-            # get_latest_provider_version,
-            # reference_docs,
-            # read_md,
-        ]
-        return tools

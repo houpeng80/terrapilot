@@ -6,7 +6,6 @@ from langchain_openai.chat_models.base import BaseChatOpenAI
 from langgraph.types import Checkpointer
 
 from backend.sub_agent.code_generate.agents.agent_state import CodeAgentState
-from backend.sub_agent.code_generate.agents.generate import Generate
 from backend.sub_agent.code_generate.plan_and_execute.executor import Executor
 
 AGENT_NAME = "dynamic_step_executor_agent"

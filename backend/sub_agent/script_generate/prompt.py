@@ -1,4 +1,3 @@
-
 SYSTEM_PROMPT_TEMPLATE = """
 <role>
 你是{agent_name}，一个Terraform脚本生成专家。

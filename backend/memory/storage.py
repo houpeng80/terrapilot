@@ -135,9 +135,6 @@ class FileMemoryStorage(MemoryStorage):
 
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            # Shallow-copy before adding lastUpdated so the caller's dict is not
-            # mutated as a side-effect, and the cache reference is not silently
-            # updated before the file write succeeds.
             memory_data = {**memory_data, "lastUpdated": utc_now_iso_z()}
 
             temp_path = file_path.with_suffix(f".{uuid.uuid4().hex}.tmp")

@@ -62,7 +62,6 @@ def get_agent_soul() -> str:
     return ""
 
 def apply_prompt_template(
-    user_id: str,
     agent_name: str | None = None,
 ) -> str:
     prompt = SYSTEM_PROMPT_TEMPLATE.format(

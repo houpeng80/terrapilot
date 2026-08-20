@@ -1,5 +1,5 @@
 import time
-from typing import Literal, Any, get_args
+from typing import Literal, get_args
 
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
@@ -29,6 +29,7 @@ intent_literal = Literal[
     "query_resource_by_api",
     "query_resource_by_content",
     "history_record",
+    "base_info",
     "unknow"
 ]
 
