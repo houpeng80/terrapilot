@@ -48,12 +48,12 @@ class ContextSummarizationMiddleware(SummarizationMiddleware):
         if cutoff_index <= 0:
             return None
 
-        logger.info(f" begin to summarization the context message, messages length: {messages.__len__()}")
+        logger.info(f"begin to summarization the context message, messages length: {messages.__len__()}")
 
         messages_to_summarize, preserved_messages = self._partition_messages(messages, cutoff_index)
         summary = self._create_summary(messages_to_summarize)
         new_messages = self._build_new_messages(summary)
-        logger.info(f" end summarization the context message")
+        logger.info(f"end summarization the context message")
 
         # 将要压缩的messages异步更新持久记忆
         self._fire_hooks(messages_to_summarize, preserved_messages, runtime)

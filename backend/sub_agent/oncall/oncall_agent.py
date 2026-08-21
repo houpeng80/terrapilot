@@ -59,18 +59,14 @@ class OncallAgent(Worker):
                 stream_mode=["messages", "updates"],
                 version="v2",
             )
-            # for chunk in stream:
+            for chunk in stream:
+                pass
                 # if self.agent_config.print_thinking_process:
                 #     if chunk["type"] == "updates":
                 #         for node_name, update in chunk["data"].items():
-                #             # 打印中断消息
-                #             if node_name == "__interrupt__":
-                #                 value = update[0].value
-                #                 print(f"❓问题：{value['reason']}，\r\n原因：{value['course']}\r\n方案：{value['message']}")
+                #             pass
                 #     elif chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
                 #         if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
-                #             print(chunk["data"][0].content, end="", flush=True)
-                #         if isinstance(chunk["data"][0], ToolMessage) and chunk["data"][0].name == "ask_clarification" and chunk["data"][0].content is not None:
                 #             print(chunk["data"][0].content, end="", flush=True)
 
         except Exception as e:
@@ -90,11 +86,11 @@ class OncallAgent(Worker):
         elif intent.intent == "whether_support_special_region":
             request_message = intent.reasoning
         elif intent.intent == "query_resource_by_name":
-            request_message = f"{intent.params["service_name"]}服务的{intent.params["resource_name"]}这个{intent.params["resource_type"]}支持吗"
+            request_message = f"{intent.params["service_type"]}服务的{intent.params["resource_name"]}这个{intent.params["resource_type"]}支持吗"
         elif intent.intent == "query_resource_by_api":
-            request_message = f"{intent.params["service_name"]}服务的{intent.params["api_method"]} {intent.params["api_url"]}这个API支持吗"
+            request_message = f"{intent.params["service_type"]}服务的{intent.params["api_method"]} {intent.params["api_url"]}这个API支持吗"
         elif intent.intent == "query_resource_by_content":
-            request_message = f"{intent.params["service_name"]}服务支持{intent.params["context"]} 吗"
+            request_message = f"{intent.params["service_type"]}服务支持{intent.params["context"]} 吗"
         else:
             request_message = ""
 

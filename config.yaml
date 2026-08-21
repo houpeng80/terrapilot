@@ -77,12 +77,12 @@ max_injection_tokens: 1000
 # ============================================================================
 # Maximum model cycle for one request, defaults to 10
 # ============================================================================
-model_cycle_max: 5
+model_cycle_max: 20
 
 # ============================================================================
-# The index of es, defaults to rag_chunk_index
+# The index of es, defaults to doc_description_index
 # ============================================================================
-es_index: rag_chunk_index
+es_index: doc_description_index
 
 # ============================================================================
 # The address of es defaults to http://localhost:9200

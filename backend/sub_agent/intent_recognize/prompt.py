@@ -20,21 +20,21 @@ def get_intents() -> str:
     - 示例："重点关注gaussdb"
     - 输出：{{"intent": "base_info", "confidence": 0.95, "reasoning": "用户说明自己重点关注gaussdb"}}
     
-- generate_script：生成terraform脚本
+- generate_script：生成terraform脚本，默认只生成当前资源信息
    - 示例："生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本，只生成当前的资源信息"， "生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本"
-   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": false}, "reasoning": "用户生成rds mysql脚本"}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": "false"}, "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成 huaweicloud_rds_mysql_account 这个resource的terraform脚本，生成依赖的资源信息"
-   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": true}, "reasoning": "用户生成rds mysql脚本"}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "resource_type": "resource", "contain_reference": "true"}, "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成 huaweicloud_rds_mysql_account 的terraform脚本，只生成当前的资源信息"
-   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "contain_reference": false}, "missing_params":["resource_type"], "reasoning": "用户生成rds mysql脚本"}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"resource_name": "huaweicloud_rds_mysql_account", "contain_reference": "false"}, "missing_params":["resource_type"], "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成terraform脚本，只生成当前的资源信息"
-   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"contain_reference": false}, "missing_params":["resource_name", "resource_type"], "reasoning": "用户生成rds mysql脚本"}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"contain_reference": "false"}, "missing_params":["resource_name", "resource_type"], "reasoning": "用户生成rds mysql脚本"}}
    
    - 示例："生成terraform脚本"
-   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"contain_reference": true}, "missing_params":["resource_name", "resource_type"], "reasoning": "用户生成rds mysql脚本"}}
+   - 输出：{{"intent": "generate_script", "confidence": 0.95, params: {"contain_reference": "false"}, "missing_params":["resource_name", "resource_type"], "reasoning": "用户生成rds mysql脚本"}}
    
 - generate_code：生成terraform代码
    - 示例："根据以下API，生成一个resource:
@@ -120,11 +120,12 @@ def get_intents() -> str:
 
 def get_critical_reminders() -> str:
     critical_reminders = """
-    - 你只能识别最新的用户意图
+    - 你只能识别最新的请求
     - 如果用户的意图发生了改变，那么你需要把之前的意图删掉，然后使用最新的用户意图
     - 如果只是补充参数则坚决不能修改意图
     - 所有的参数都必须是用户明确的输入，不能自己编造，也不能猜测，如果用户没有输入，就设置为空
     - 如果用户未提供某个参数，在 params 中省略该字段，并将其加入 missing_params
+    - 历史对话仅用于理解背景，以最后一次用户请求为准，历史已经完成的请求不在当做当前意图
     """
 
     if critical_reminders:
@@ -134,10 +135,14 @@ def get_critical_reminders() -> str:
 SYSTEM_PROMPT_TEMPLATE = """
     你是一个华为云terraform provider意图识别专家。请分析用户输入，判断其最可能的意图，并给出置信度，并提取对应的参数。
     
+    任务： 提取用户当前最新意图
+    
+    可选意图：    
+    {intents}
+    
+    规则：
     {critical_reminders}
     
-    {intents}
-
 输出格式必须是JSON：
 ```新意图
 {{
@@ -160,10 +165,11 @@ SYSTEM_PROMPT_TEMPLATE = """
 ```
     """
 
-def apply_system_prompt() -> str:
+def apply_system_prompt(recently_request: str = "") -> str:
     prompt = SYSTEM_PROMPT_TEMPLATE.format(
         intents=get_intents(),
         critical_reminders=get_critical_reminders(),
+        # recently_request=recently_request,
     )
 
     return prompt

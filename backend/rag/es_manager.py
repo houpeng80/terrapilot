@@ -48,8 +48,24 @@ def create_index(client: Elasticsearch):
             }
         }
     }
-    client.indices.create(index=get_agent_config().es_index, body=index_mapping)
-    print(f"index {get_agent_config().es_index} create successful")
+    res = client.indices.create(index=get_agent_config().es_index, body=index_mapping)
+    print(f"index {get_agent_config().es_index} create resp: {res}")
+
+def delete_index(client: Elasticsearch):
+    if not client.indices.exists(index=get_agent_config().es_index):
+        print(f"index {get_agent_config().es_index} not exists，skip deleting")
+        return
+
+    resp = client.delete_by_query(
+        index=get_agent_config().es_index,
+        query={"match_all": {}},
+        request_timeout=120,
+        wait_for_completion=False
+    )
+    print(f"index {get_agent_config().es_index} delete data resp: {resp}")
+
+    res = client.indices.delete(index=get_agent_config().es_index, request_timeout=120)
+    print(f"index {get_agent_config().es_index} delete resp: {res}")
 
 def build_es_bulk_actions(documents: list[tuple[str, Document]]) -> list[dict]:
     actions =[]

@@ -72,6 +72,8 @@ class LeaderAgent:
                 # save thc cache queue to memory
                 get_memory_queue().flush()
                 break
+            if user_input.lower().strip() == "":
+                continue
 
             self.run(user_input)
 
@@ -88,8 +90,9 @@ class LeaderAgent:
         # 路由、判断、人工确认
         route, msg = self.router_manager.router(intent_res, histories)
         print("======================================================")
-        print("route: ",route)
-        print("msg: ",msg)
+        print("intent: ", intent_res. intent)
+        print("route: ", route)
+        print("msg: ", msg)
         print("======================================================")
         if route == JUMP_TO_END:
             result_input = msg
@@ -135,24 +138,17 @@ class LeaderAgent:
                 version="v2",
             )
             for chunk in stream:
-                # print(chunk)
                 if self.agent_config.print_thinking_process:
-                    if chunk["type"] == "updates":
-                        for node_name, update in chunk["data"].items():
-                            # 打印中断消息
-                            if node_name == "__interrupt__":
-                                value = update[0].value
-                                print(f"❓问题：{value['reason']}，\r\n原因：{value['course']}\r\n方案：{value['message']}")
-                    elif chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
-                        if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
-                            print(chunk["data"][0].content, end="", flush=True)
-                        if isinstance(chunk["data"][0], ToolMessage) and chunk["data"][0].name == "ask_clarification" and chunk["data"][0].content is not None:
+                    if chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
+                        if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None and chunk["data"][1].get("lc_source") != "summarization":
                             print(chunk["data"][0].content, end="", flush=True)
 
         except Exception as e:
             print(f"\n--- ❌ fail to deal question: {e}---")
 
         state = self.agent.get_state(self.config)
+        print("\n================")
+        print("last state: ",state)
         return state
 
     def create_terrapilot_agent(self):

@@ -21,6 +21,31 @@ def get_markdown_file_description(folder: str, file_name: str) -> str:
     res = content.split("---")[-1].split("##")[0].strip()
     return res
 
+def load_document_descriptions(service: str) -> list[tuple[str, Document]]:
+    final_documents = []
+    for resource_type, folder in resource_path.items():
+        folder_path = TERRAFORM_CODE_PATH / folder
+        try:
+            items = os.listdir(folder_path)
+            for item in items:
+                if item.startswith(service):
+                    metadata = {
+                        "source": f"{folder}/{item}",
+                        "file_type": "md",
+                    }
+                    doc_description = get_markdown_file_description(folder, item)
+                    new_doc = Document(
+                        page_content=doc_description,
+                        metadata=metadata
+                    )
+                    final_documents.append((f"{resource_type}/{item}", new_doc))
+        except FileNotFoundError:
+            print("file not exists")
+        except PermissionError:
+            print("no permission of the directory")
+
+    return final_documents
+
 def split_markdown_file(folder: str, file_name: str, resource_type: str) -> list[tuple[str, Document]]:
     with open(TERRAFORM_CODE_PATH / folder / file_name, "r", encoding="utf-8") as f:
         content = f.read()

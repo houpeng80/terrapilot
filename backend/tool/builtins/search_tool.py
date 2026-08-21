@@ -66,13 +66,13 @@ def api_search_tool(service_name: str, api_method: str, api_url: str) -> list[st
         # 查询
         names = search_resource_by_key_word(f"// @API {service_name} {api_method} {api_url}", f"huaweicloud/services/{service_name}")
         if len(names) > 0:
-            return [f"{service_name}_{name}" for name in names]
+            return [f"{service_name}_{name}" for name in names if name is not None and len(name) > 0]
         # 如果不存在就切换到master
         checkout_code("master")
         # 查询
         names = search_resource_by_key_word(f"// @API {service_name} {api_method} {api_url}",f"huaweicloud/services/{service_name}")
         if len(names) > 0:
-            return [f"{service_name}_{name}" for name in names]
+            return [f"{service_name}_{name}" for name in names if name is not None and len(name) > 0]
         return None
     except Exception as err:
         raise ToolException(err)
