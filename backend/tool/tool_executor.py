@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from typing import Any, Optional
@@ -37,7 +38,7 @@ class ToolExecutor:
                 result = tool.invoke(tool_input, **kwargs)
                 duration = time.time() - start_time
                 self._log_success(tool_name, tool_input, result, duration)
-                return ToolExecutionResult(True, result=result, duration=duration)
+                return ToolExecutionResult(True, result=json.dumps(result, ensure_ascii=False), duration=duration)
             except Exception as e:
                 last_error = e
                 attempt += 1

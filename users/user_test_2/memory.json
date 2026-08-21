@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-08-21T04:54:39.130649Z",
+  "user": {
+    "workContext": {
+      "summary": "User operates in Huawei cloud services, focusing on ECS, DCS, RDS, and Terraform scripting, with recent activities including investigating specific RDS API endpoints like disk auto-expansion and generating Terraform scripts.",
+      "updatedAt": "2026-08-21T03:45:27.705180Z"
+    },
+    "personalContext": {
+      "summary": "User is Zhang Wuji, 50 years old, male, communicates in Chinese, and has an interest in ECS, suggesting a focus on Huawei's cloud compute technologies.",
+      "updatedAt": "2026-08-20T09:28:11.254836Z"
+    },
+    "topOfMind": {
+      "summary": "The user's primary focus on verifying the RDS disk auto-expansion API has been resolved with the correct endpoint being POST /v3/{project_id}/instances/{instance_id}/auto-expansion, and the PUT method is unsupported. Concurrent interests include Terraform scripting best practices for Huawei Cloud services and DCS resources. The user continues to provide session summaries and engage with technical details, indicating an active approach to cloud service management.",
+      "updatedAt": "2026-08-21T04:41:25.254705Z"
+    }
+  },
+  "history": {
+    "recentMonths": {
+      "summary": "",
+      "updatedAt": ""
+    },
+    "earlierContext": {
+      "summary": "",
+      "updatedAt": ""
+    },
+    "longTermBackground": {
+      "summary": "User is Zhang Wuji, a 50-year-old male professional with interest in Huawei cloud services, specifically ECS.",
+      "updatedAt": "2026-08-20T09:26:57.753712Z"
+    },
+    "recentHours": {
+      "summary": "In recent hours, the user provided a session summary on verifying the RDS disk auto-expansion API, and the assistant clarified the correct API endpoint. The user later requested another summary of the conversation to date, and the assistant confirmed the API conclusion, reinforcing the resolution. The user remains interested in Terraform scripting and DCS resources, with previous tool call errors addressed.",
+      "updatedAt": "2026-08-21T04:50:14.940390Z"
+    }
+  },
+  "facts": [
+    {
+      "id": "fact_d5b8e5f8",
+      "context": "User's name is Zhang Wuji (张无忌).",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-08-20T09:26:57.753712Z",
+      "source": "default_thread_id2"
+    },
+    {
+      "id": "fact_446d94c5",
+      "context": "User is 50 years old.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-08-20T09:26:57.753712Z",
+      "source": "default_thread_id2"
+    },
+    {
+      "id": "fact_f1f8cddd",
+      "context": "User is male.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-08-20T09:26:57.753712Z",
+      "source": "default_thread_id2"
+    },
+    {
+      "id": "fact_3bbd3c43",
+      "context": "User is focused on ECS (Elastic Cloud Server) on Huawei Cloud.",
+      "category": "goal",
+      "confidence": 1.0,
+      "createdAt": "2026-08-20T09:26:57.753712Z",
+      "source": "default_thread_id2"
+    },
+    {
+      "id": "fact_bb2d57a5",
+      "context": "User is focused on generating Terraform scripts for Huawei Cloud services, specifically the huaweicloud_dcs_flavors data source.",
+      "category": "goal",
+      "confidence": 1.0,
+      "createdAt": "2026-08-20T12:17:18.185568Z",
+      "source": "default_thread_id2"
+    }
+  ]
+}

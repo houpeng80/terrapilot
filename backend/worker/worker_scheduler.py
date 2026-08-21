@@ -20,7 +20,7 @@ class WorkerScheduler:
         try:
             worker = self.registry.get_worker_by_intent(request.intent)
         except KeyError as e:
-            return WorkerExecutionResult(False, error=f"Worker by intent '{request.intent}' not found", duration=0.0)
+            return WorkerExecutionResult(False, error=f"Worker by intent '{request.intent}' not found: {e}", duration=0.0)
 
         while attempt < self.max_retries:
             try:

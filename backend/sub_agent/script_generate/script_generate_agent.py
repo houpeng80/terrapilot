@@ -29,7 +29,7 @@ class ScriptGenerateAgent(Worker):
     def __init__(self):
         super().__init__(AGENT_NAME)
         agent_config = get_agent_config()
-        self.model = get_model(agent_config.model_type)
+        self.model = get_model(agent_config.model_type,True)
         self.config = {"configurable": {"thread_id": uuid.uuid4().hex}}
         self.check_pointer = InMemorySaver()
         self.agent_config = agent_config
@@ -56,24 +56,27 @@ class ScriptGenerateAgent(Worker):
                 stream_mode=["messages", "updates"],
                 version="v2",
             )
-            print(f"\n--- begin to generate script ---")
+            print(f"\n--- 开始生成脚本 ---")
             for chunk in stream:
-                if self.agent_config.print_thinking_process:
-                    if chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
-                        if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
-                            print(chunk["data"][0].content, end="", flush=True)
+                pass
+                # if self.agent_config.print_thinking_process:
+                #     if chunk["type"] == "messages" and chunk["data"] is not None and len(chunk["data"]) > 0:
+                #         if isinstance(chunk["data"][0], AIMessageChunk) and chunk["data"][0].content is not None:
+                #             print(chunk["data"][0].content, end="", flush=True)
 
         except Exception as e:
             raise e
 
         state = agent.get_state(self.config)
+        # print("generate script", state)
+        print(f"\n--- 生成脚本完成 ---")
 
-        return state.values["messages"][-1].content
+        return f"生成的脚本信息：\r\n{state.values["messages"][-1].content}"
 
     def build_request_message(self, intent: WorkerRequest) -> str:
         if intent.intent == "generate_script":
             request_message = f"生成 {intent.params["resource_name"]} 这个{intent.params["resource_type"]}的terraform脚本"
-            if intent.params["resource_name"]:
+            if intent.params["contain_reference"] == "true":
                 request_message = request_message + "，生成依赖的资源信息"
             else:
                 request_message = request_message + "，只生成当前的资源信息"
@@ -107,12 +110,12 @@ class ScriptGenerateAgent(Worker):
                 model=self.model,
                 agent_name=AGENT_NAME,
                 trigger=[
-                    ("messages", self.agent_config.summarization_trigger_messages),
-                    ("tokens", self.agent_config.summarization_trigger_tokens)
+                    ("messages", self.agent_config.code_generate_summarization_trigger_messages),
+                    ("tokens", self.agent_config.code_generate_max_tokens)
                 ],
-                keep=("tokens", self.agent_config.summarization_trigger_tokens / 3)
+                keep=("tokens", self.agent_config.code_generate_summarization_trigger_messages / 3)
             ),
-            TodoMiddleware(agent_name=AGENT_NAME),
+            # TodoMiddleware(),
         ]
         return middlewares
 

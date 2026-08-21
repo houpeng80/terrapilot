@@ -1,4 +1,6 @@
-from assistant.rag.doc_manager import load_documents, split_markdown_file, get_markdown_file_description
+from backend.rag.doc_manager import load_documents, split_markdown_file, get_markdown_file_description, \
+    load_document_descriptions
+
 
 def load_docs():
     # "gaussdb", "rds", "dds", "compute", "geminidb", "taurusdb", "elb", "dcs", "ddm", "elb", "vpc", "cce", "dns", "dms_kafka", "dms_rocketmq", "dms_rabbitmq" "vpn"
@@ -15,9 +17,12 @@ def split_md_file(folder: str, file_name: str, resource_type: str):
     print(res)
 
 def get_markdown_description(folder: str, file_name: str, resource_type: str):
-    res = get_markdown_file_description(folder, file_name, resource_type)
+    res = get_markdown_file_description(folder, file_name)
     print(res)
 
 if __name__ == '__main__':
 
-    get_markdown_description("docs/resources", "rds_backup.md", "resource")
+    # get_markdown_description("docs/resources", "rds_backup.md", "resource")
+
+    res = load_document_descriptions("rds")
+    print(res)
