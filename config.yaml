@@ -102,7 +102,7 @@ print_thinking_process: true
 # ============================================================================
 # Where open tool call trace, true/false, defaults to false
 # ============================================================================
-open_tool_call_trace: true
+open_tool_call_trace: false
 
 # ============================================================================
 # Plan and execute type (graph/fixed_step/dynamic_step), defaults to dynamic_step

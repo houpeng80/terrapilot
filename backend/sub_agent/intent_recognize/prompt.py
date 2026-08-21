@@ -60,7 +60,6 @@ def get_intents() -> str:
    - 示例："根据以下API，生成一个资源"
    - 输出：{{"intent": "generate_code", "confidence": 0.95, params: {"input": "根据以下API，生成一个资源"}, "missing_params":["resource_type", "api_url"], "reasoning": "用户要生成资源"}}
    
-   
 - query_oncall：查询当前oncall的排班信息。
    - 示例："当前oncall是谁？"、"这周谁值班？"、"这个问题找谁排查"
    - 输出：{{"intent": "query_oncall", "confidence": 0.95, "reasoning": "用户查询oncall排班"}}
@@ -79,36 +78,36 @@ def get_intents() -> str:
 
 - query_resource_by_name：根据资源名称查询资源是否存在。
    - 示例："huaweicloud_lts_aom_access这个支持吗"、"huaweicloud_lts_aom_access是啥"
-   - 输出：{{"intent": "query_resource_by_name", "confidence": 0.95, params: {"resource_name":"huaweicloud_rds_backup"}, "reasoning": "用户查询huaweicloud_rds_backup这个资源的详情， 但是没有说明服务名和资源类型"}}
+   - 输出：{{"intent": "query_resource_by_name", "confidence": 0.95, params: {"resource_name":"huaweicloud_rds_backup"}, "missing_params":["service_type", "resource_type"], "reasoning": "用户查询huaweicloud_rds_backup这个资源的详情， 但是没有说明服务名和资源类型"}}
 
    - 示例："huaweicloud_lts_aom_access这个资源(resource)/数据源(data_source)支持吗"、"huaweicloud_lts_aom_access这个资源(resource)/数据源(data_source)是啥"
-   - 输出：{{"intent": "query_resource_by_name", "confidence": 0.95, params: {"resource_type":"resource", "resource_name":"huaweicloud_rds_backup"}, "reasoning": "用户查询huaweicloud_rds_backup这个资源详情， 但是没有说明服务名"}}
+   - 输出：{{"intent": "query_resource_by_name", "confidence": 0.95, params: {"resource_type":"resource", "resource_name":"huaweicloud_rds_backup"}, "missing_params":["service_type"], "reasoning": "用户查询huaweicloud_rds_backup这个资源详情， 但是没有说明服务名"}}
    
    - 示例："RDS服务huaweicloud_lts_aom_access这个支持吗"、"RDS 服务huaweicloud_lts_aom_access这个是啥"
-   - 输出：{{"intent": "query_resource_by_name", "confidence": 0.95, params: {"service_type":"rds", "resource_name":"huaweicloud_rds_backup"}, "reasoning": "用户查询huaweicloud_rds_backup这个资源的详情， 但是没有说明资源类型"}}
+   - 输出：{{"intent": "query_resource_by_name", "confidence": 0.95, params: {"service_type":"rds", "resource_name":"huaweicloud_rds_backup"}, "missing_params":["resource_type"], "reasoning": "用户查询huaweicloud_rds_backup这个资源的详情， 但是没有说明资源类型"}}
    
    - 示例："RDS服务huaweicloud_lts_aom_access这个资源(resource)/数据源(data_source)支持吗"、"RDS 服务huaweicloud_lts_aom_access这个资源(resource)/数据源(data_source)是啥"
    - 输出：{{"intent": "query_resource_by_name", "confidence": 0.95, params: {"service_type":"rds", "resource_type":"resource", "resource_name":"huaweicloud_rds_backup"}, "reasoning": "用户查询huaweicloud_rds_backup这个资源详情"}}
    
 - query_resource_by_api：根据API查询资源是否存在。
    - 示例："/v3/{project_id}/lts/access-config 这个API支持吗"、 "v3/{project_id}/lts/access-config 这个API集成了吗"、"哪里用到了 /v3/{project_id}/lts/access-config 这个API"
-   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.6, params: {"api_url":"/v3/{project_id}/backups"}, "reasoning": "用户查询RDS服务的 POST /v3/{project_id}/backups 这个API是否支持， 但是没有说明服务名和资源类型"}}
+   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.6, params: {"api_url":"/v3/{project_id}/backups"}, "missing_params":["service_type", "api_method"], "reasoning": "用户/v3/{project_id}/lts/access-config 这个API是否支持， 但是没有说明服务名和请求方法"}}
    
    - 示例："DELETE /v3/{project_id}/lts/access-config 这个API支持吗"、 "DELETE /v3/{project_id}/lts/access-config 这个API集成了吗"、"哪个资源用到了DELETE /v3/{project_id}/lts/access-config 这个API"
-   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.7, params: {"api_method":"DELETE", "api_url":"/v3/{project_id}/backups"}, "reasoning": "用户查询RDS服务的 POST /v3/{project_id}/backups 这个API是否支持， 但是没有说明服务名"}}
+   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.7, params: {"api_method":"DELETE", "api_url":"/v3/{project_id}/backups"}, "missing_params":["service_type"], "reasoning": "用户查询DELETE /v3/{project_id}/lts/access-config 这个API是否支持， 但是没有说明服务名"}}
 
    - 示例："LTS 服务的 /v3/{project_id}/lts/access-config 这个API支持吗"、 "LTS 服务的 /v3/{project_id}/lts/access-config 这个API集成了吗"、"哪个资源用到了LTS 服务的 /v3/{project_id}/lts/access-config 这个API"
-   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.8, params: {"service_name":"lts", "api_url":"/v3/{project_id}/backups"}, "reasoning": "用户查询RDS服务的 POST /v3/{project_id}/backups 这个API是否支持， 但是没有说明API方法"}}
+   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.8, params: {"service_type":"lts", "api_url":"/v3/{project_id}/backups"}, "missing_params":["api_method"], "reasoning": "用户查询LTS服务的 /v3/{project_id}/lts/access-config  这个API是否支持， 但是没有说明API方法"}}
 
    - 示例："LTS 服务的 DELETE /v3/{project_id}/lts/access-config 这个API支持吗"、 "LTS 服务的 DELETE /v3/{project_id}/lts/access-config 这个API集成了吗"、"哪个资源用到了LTS 服务的 DELETE /v3/{project_id}/lts/access-config 这个API"
-   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.95, params: {"service_name":"lts", "api_method":"DELETE", "api_url":"/v3/{project_id}/backups"}, "reasoning": "用户查询RDS服务的 POST /v3/{project_id}/backups 这个API是否支持"}}
+   - 输出：{{"intent": "query_resource_by_api", "confidence": 0.95, params: {"service_type":"lts", "api_method":"DELETE", "api_url":"/v3/{project_id}/backups"}, "reasoning": "用户查询LTS服务的 DELETE /v3/{project_id}/lts/access-config  这个API是否支持"}}
 
 - query_resource_by_content：查询是否支持查询某个资源、管理某个资源、创建某个资源, 提取用户的关键意图内容，忽略其中的询问以及语气词。
    - 示例："支持创建备份吗"、"可以创建实例吗"
-   - 输出：{{"intent": "query_resource_by_content", "confidence": 0.8, params: { "context":"创建RDS实例"}, "reasoning": "用户咨询是否支持创建RDS实例，但是没有说明服务名"}}
+   - 输出：{{"intent": "query_resource_by_content", "confidence": 0.8, params: { "context":"创建RDS实例"}, "missing_params":["api_method"], "reasoning": "用户咨询是否支持创建RDS实例，但是没有说明服务名"}}
    
    - 示例："支持创建RDS备份吗"、"可以创建DCS实例吗"
-   - 输出：{{"intent": "query_resource_by_content", "confidence": 0.95, params: {"service_name":"rds", "context":"创建RDS实例"}, "reasoning": "用户咨询是否支持创建RDS实例"}}
+   - 输出：{{"intent": "query_resource_by_content", "confidence": 0.95, params: {"service_type":"rds", "context":"创建RDS实例"}, "reasoning": "用户咨询是否支持创建RDS实例"}}
 
 - unknow：日常闲聊，与业务无关。
    - 示例："你好啊、"我漂亮吗？"、"你是谁"
